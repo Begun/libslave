@@ -1,4 +1,3 @@
-/*
 /* Copyright 2011 ZAO "Begun".
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -13,6 +12,7 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
  * 
  * Гарантируется работа с MySQL5.1.23
  * 

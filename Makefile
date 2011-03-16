@@ -15,7 +15,7 @@ SHARED_LIB = libslave.so
 
 all: $(STATIC_LIB) $(SHARED_LIB)
 
-%.o: %.cpp
+%.o: %.cpp $(IDEPS)
 	$(CXX) $(CFLAGS) $< -fPIC -c -o $@
 
 $(STATIC_LIB): $(OBJS)
@@ -27,5 +27,11 @@ $(SHARED_LIB): $(OBJS)
 
 clean:
 	-rm -f $(OBJS) $(STATIC_LIB) $(SHARED_LIB) 
+
+
+test.out: test/test.cpp $(IDEPS) $(STATIC_LIB)
+	$(CXX) $(CFLAGS) -I. test/test.cpp $(STATIC_LIB) $(LFLAGS) -o test.out
+
+test: test.out
 
 

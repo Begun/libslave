@@ -1,0 +1,59 @@
+
+
+ABOUT
+-------------------------------------------------------------------
+
+This is a library that allows any arbitrary C++ application to connect
+to a Mysql replication master and read/parse the replication binary
+logs.
+
+In effect, any application can now act like a Mysql replication slave,
+without having to compile or link with any Mysql server code.
+
+One important use-case for this library is for receiving changes in
+the master database in real-time, without having the store the
+master's data on the client server.
+
+
+USAGE
+-------------------------------------------------------------------
+
+Build requirements:
+
+For building the library, you will need:
+
+ * g++
+
+ * The headers of the boost libraries. (http://www.boost.org)
+   At the minimum, you will need at least the shared_ptr.hpp, function.hpp,
+   any.hpp and bind.hpp.
+
+Usage requirements:
+
+ * Requires Mysql 5.1.23 or above. Tested only with some of the 5.1
+   versions of mysql servers.
+
+Compiling:
+
+Edit Makefile to set the path of your boost includes and your build
+options; type 'make' to build a static and a shared version of the
+library.
+
+Note: The enclosed Makefile is intended only as a demonstration,
+not a complete build solution.
+
+
+Using the library: 
+
+Please see the examples in 'test/'. 
+
+
+CREDITS
+-------------------------------------------------------------------
+
+(c) 2011, ZAO "Begun"
+
+https://github.com/Begun/libslave
+
+This library is licensed under the GNU LGPL. Please see the file LICENSE.
+

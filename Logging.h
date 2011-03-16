@@ -16,10 +16,12 @@
 #ifndef __SLAVE_LOGGING_H
 #define __SLAVE_LOGGING_H
 
+#include <iostream>
+
 #define LOG_TRACE(LOG, S) 
 #define LOG_DEBUG(LOG, S) 
 #define LOG_INFO(LOG, S) 
-#define LOG_WARNING(LOG, S) 
-#define LOG_ERROR(LOG, S) 
+#define LOG_WARNING(LOG, S) std::cerr << S << std::endl;
+#define LOG_ERROR(LOG, S) std::cerr << S << std::endl;
 
 #endif
