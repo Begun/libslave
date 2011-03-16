@@ -8,8 +8,6 @@
 
 std::string print(const std::string& type, const boost::any& v) {
     
-    std::cout << type << " " << v.type().name() << std::endl;
-
     if (v.type() == typeid(std::string)) {
 
         std::string r = "'";
@@ -22,6 +20,9 @@ std::string print(const std::string& type, const boost::any& v) {
 
         if (v.type() == typeid(int)) 
             s << boost::any_cast<int>(v);
+
+        else if (v.type() == typeid(unsigned int))
+            s << boost::any_cast<unsigned int>(v);
 
         else if (v.type() == typeid(double))
             s << boost::any_cast<double>(v);
@@ -50,13 +51,21 @@ void callback(const slave::RecordSet& event) {
 
     for (slave::Row::const_iterator i = event.m_row.begin(); i != event.m_row.end(); ++i) {
 
-        std::cout << "  " << i->first << " : " << i->second.first << " -> " << print(i->second.first, i->second.second);
+        std::string value = print(i->second.first, i->second.second);
+
+        std::cout << "  " << i->first << " : " << i->second.first << " -> " << value;
 
         if (event.type_event == slave::RecordSet::Update) {
 
             slave::Row::const_iterator j = event.m_old_row.find(i->first);
 
-            std::cout << "    (was: " << (j == event.m_old_row.end() ? "NULL" : print(i->second.first, j->second.second)) << ")";
+            std::string old_value("NULL");
+
+            if (j != event.m_old_row.end()) 
+                old_value = print(i->second.first, j->second.second);
+
+            if (value != old_value) 
+                std::cout << "    (was: " << old_value << ")";
         }
 
         std::cout << "\n";
