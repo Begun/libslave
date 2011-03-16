@@ -28,6 +28,12 @@ For building the library, you will need:
    At the minimum, you will need at least the shared_ptr.hpp, function.hpp,
    any.hpp and bind.hpp.
 
+ * You (likely) will need to review and edit the contents of Logging.h
+   and SlaveStats.h
+   These headers contain the compile-time configuration of the logging
+   and monitoring subsystems.
+   The provided defaults are sub-standard and an example only.
+
 Usage requirements:
 
  * Requires Mysql 5.1.23 or above. Tested only with some of the 5.1
@@ -39,6 +45,9 @@ Edit Makefile to set the path of your boost includes and your build
 options; type 'make' to build a static and a shared version of the
 library.
 
+Review and edit Logging.h and SlaveStats.h to interface the library to
+your app's logging and monitoring subsystems.
+
 Note: The enclosed Makefile is intended only as a demonstration,
 not a complete build solution.
 
@@ -46,6 +55,9 @@ not a complete build solution.
 Using the library: 
 
 Please see the examples in 'test/'. 
+
+You can find the programmer's API documentation on our github wiki
+pages, see https://github.com/Begun/libslave.
 
 
 CREDITS
