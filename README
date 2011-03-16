@@ -24,6 +24,8 @@ For building the library, you will need:
 
  * g++
 
+ * The standard mysql C client libraries. (libmysqlclient)
+
  * The headers of the boost libraries. (http://www.boost.org)
    At the minimum, you will need at least the shared_ptr.hpp, function.hpp,
    any.hpp and bind.hpp.
