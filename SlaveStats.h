@@ -87,7 +87,7 @@ public:
         size_t e = f.tellg();
         f.seekg(n+1, std::ios::beg);
 
-        logname.resize(e - n - 2);
+        logname.resize(e - n - 1);
 
         f.getline((char*)logname.c_str(), logname.size());
 
