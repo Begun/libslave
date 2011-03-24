@@ -79,6 +79,8 @@ Query_event_info::Query_event_info(const char* buf, unsigned int event_len) {
 
     unsigned int status_vars_len = uint2korr(buf + LOG_EVENT_HEADER_LEN + Q_STATUS_VARS_LEN_OFFSET);
 
+    status_vars_len++;
+
     size_t data_len = event_len - (LOG_EVENT_HEADER_LEN + QUERY_HEADER_LEN) - status_vars_len;
 
     query.assign(buf + LOG_EVENT_HEADER_LEN + QUERY_HEADER_LEN + status_vars_len, data_len);
@@ -440,7 +442,8 @@ void apply_row_event(slave::RelayLogInfo& rli, const Basic_event_info& bei, cons
 
         unsigned char* row_start = roi.m_rows_buf;
 
-        while (row_start < roi.m_rows_end) {
+        while (row_start < roi.m_rows_end && 
+               row_start != NULL) {
 
             if (bei.type == UPDATE_ROWS_EVENT) {
 

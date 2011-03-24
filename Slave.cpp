@@ -849,11 +849,12 @@ int Slave::process_event(const slave::Basic_event_info& bei, RelayLogInfo &m_rli
 
     case QUERY_EVENT:
     {
-        LOG_TRACE(log, "Received QUERY_EVENT.");
 
         //если пришел запрос ALTER TABLE
 
         slave::Query_event_info qei(bei.buf, bei.event_len);
+
+        LOG_TRACE(log, "Received QUERY_EVENT: " << qei.query);
 
         if (checkAlterQuery(qei.query)) {
 
