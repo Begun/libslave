@@ -82,6 +82,7 @@ enum Log_event_type
 #define QUERY_HEADER_MINIMAL_LEN     (4 + 4 + 1 + 2)
 #define QUERY_HEADER_LEN     (QUERY_HEADER_MINIMAL_LEN + 2)
 #define Q_STATUS_VARS_LEN_OFFSET 11
+#define Q_DB_LEN_OFFSET             8
 
 #define TABLE_MAP_HEADER_LEN   8
 #define TM_MAPID_OFFSET    0

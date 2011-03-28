@@ -77,13 +77,14 @@ Query_event_info::Query_event_info(const char* buf, unsigned int event_len) {
         ::abort();
     }
 
-    unsigned int status_vars_len = uint2korr(buf + LOG_EVENT_HEADER_LEN + Q_STATUS_VARS_LEN_OFFSET);
+    unsigned int db_len = (unsigned int)buf[LOG_EVENT_HEADER_LEN + Q_DB_LEN_OFFSET];
 
-    status_vars_len++;
+    unsigned int status_vars_len = uint2korr(buf + LOG_EVENT_HEADER_LEN + Q_STATUS_VARS_LEN_OFFSET);
 
     size_t data_len = event_len - (LOG_EVENT_HEADER_LEN + QUERY_HEADER_LEN) - status_vars_len;
 
-    query.assign(buf + LOG_EVENT_HEADER_LEN + QUERY_HEADER_LEN + status_vars_len, data_len);
+    query.assign(buf + LOG_EVENT_HEADER_LEN + QUERY_HEADER_LEN + status_vars_len + db_len + 1, 
+                 data_len - db_len - 1);
 }
 
 
