@@ -494,11 +494,9 @@ connected:
             m_master_info.master_log_pos = event.log_pos;
 
 
-            time_t seconds_behind_master = ::time(NULL) - event.when;
+            LOG_TRACE(log, "seconds_behind_master: " << (::time(NULL) - event.when) );
 
-            LOG_TRACE(log, "seconds_behind_master: " << seconds_behind_master);
-
-            stats::setSecondsBehindMaster(seconds_behind_master);
+            stats::setLastEventTime(event.when);
 
             //
 

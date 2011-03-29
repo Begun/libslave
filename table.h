@@ -62,7 +62,7 @@ public:
         stats::incTableCount(full_name);
 
         // Стата
-        stats::setLastUpdateTime();
+        stats::setLastFilteredUpdateTime();
 
         m_callback(_rs);
     }

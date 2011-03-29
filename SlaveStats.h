@@ -43,8 +43,9 @@ public:
     unsigned long master_log_pos;
     unsigned int reconnect_count;
     bool state_processing;
-    time_t seconds_behind_master;
+    time_t last_event_time;
     time_t last_update;
+    time_t last_filtered_update;
     time_t time_connect;
 
     std::map<std::string,size_t> table_counts;
@@ -55,8 +56,9 @@ public:
         master_log_pos(0),
         reconnect_count(0),
         state_processing(false),
-        seconds_behind_master(0),
-        last_update(0), 
+        last_event_time(0),
+        last_update(0),
+        last_filtered_update(0),
         time_connect(0)
         {}
 
@@ -108,7 +110,7 @@ inline void setConnectTime() { stats().time_connect = ::time(NULL); }
 
 inline void setHost(const std::string& h) { stats().connection_host = h; }
 
-inline void setLastUpdateTime() { stats().last_update = ::time(NULL); }
+inline void setLastFilteredUpdateTime() { stats().last_filtered_update = ::time(NULL); }
 
 inline void setMasterInfoFile(const std::string& f) { stats().master_info_file = f; }
 
@@ -118,7 +120,10 @@ inline void setMasterLogPos(unsigned int p) { stats().master_log_pos = p; }
 
 inline void setReconnectCount() { stats().reconnect_count++; }
 
-inline void setSecondsBehindMaster(time_t d) { stats().seconds_behind_master = d; }
+inline void setLastEventTime(time_t d) { 
+    stats().last_event_time = d; 
+    stats().last_update = ::time(NULL); 
+}
 
 inline void setStateProcessing(bool p) { stats().state_processing = p; }
 
