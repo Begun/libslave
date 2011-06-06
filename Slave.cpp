@@ -69,38 +69,10 @@ void Slave::createDatabaseStructure_(table_order_t& tabs, RelayLogInfo& rli) con
 
     LOG_TRACE(log, "enter: createDatabaseStructure");
 
-    std::map<std::string, std::set<std::string> > resorted;
-
     for (table_order_t::const_iterator it = tabs.begin(); it != tabs.end(); ++ it) {
-
-        resorted[it->first].insert(it->second);
 
         LOG_INFO( log, "Creating database structure for: " << it->first << ", Creating table for: " << it->second );
-    }
-
-
-    std::map<std::string, std::map<std::string,std::string> > types;
-
-    for (std::map<std::string, std::set<std::string> >::const_iterator i =
-             resorted.begin(); i != resorted.end(); ++i) {
-
-        std::map<std::string, std::string> tmp = getRowType(i->first, i->second);
-
-        for (std::set<std::string>::const_iterator j = i->second.begin(); j != i->second.end(); ++j) {
-
-            types[i->first][*j] = tmp[*j];
-        }
-    }
-
-    for (table_order_t::const_iterator it = tabs.begin(); it != tabs.end(); ++ it) {
-
-        const std::string& rt = types[it->first][it->second];
-
-        if (rt.size() == 0) {
-            throw std::runtime_error("SANITY CHECK ERROR: no row type for " + it->first + "." + it->second);
-        }
-
-        createTable(rli, it->first, it->second, rt);
+        createTable(rli, it->first, it->second);
     }
 
     LOG_TRACE(log, "exit: createDatabaseStructure");
@@ -109,8 +81,7 @@ void Slave::createDatabaseStructure_(table_order_t& tabs, RelayLogInfo& rli) con
 
 
 void Slave::createTable(RelayLogInfo& rli,
-                        const std::string& db_name, const std::string& tbl_name,
-                        const std::string& row_type) const {
+                        const std::string& db_name, const std::string& tbl_name) const {
 
     LOG_TRACE(log, "enter: createTable " << db_name << " " << tbl_name);
 
@@ -122,15 +93,10 @@ void Slave::createTable(RelayLogInfo& rli,
     conn.query("DESCRIBE " + db_name + "." + tbl_name);
     conn.store(res);
 
-    boost::shared_ptr<Table> table(new Table(db_name, tbl_name, row_type));
+    boost::shared_ptr<Table> table(new Table(db_name, tbl_name));
 
 
     LOG_DEBUG(log, "Created new Table object: database:" << db_name << " table: " << tbl_name );
-
-    unsigned int null_fields = 0;
-
-    //байт, учавствующий в определении master null bytes
-    int db_create_options = 0;
 
     for (nanomysql::Connection::result_t::const_iterator i = res.begin(); i != res.end(); ++i) {
 
@@ -156,9 +122,6 @@ void Slave::createTable(RelayLogInfo& rli,
         if (z == i->end())
             throw std::runtime_error("Slave::create_table(): DESCRIBE query did not return 'Null'");
 
-        std::string is_null = z->second.data;
-
-
         std::string extract_field;
 
         //получаем тип поля
@@ -180,93 +143,83 @@ void Slave::createTable(RelayLogInfo& rli,
         if (extract_field.empty())
             throw std::runtime_error("Slave::create_table(): Regexp error, type not found");
 
-        //подсчитываем количество null-полей
-        bool maybe_null = false;
-
         LOG_DEBUG(log, "Created column: name-type: " << name << " - " << type
                   << " Field type: " << extract_field );
-
-        if (is_null == "YES") {
-            maybe_null = true;
-            ++null_fields;
-        } else {
-            maybe_null = false;
-        }
 
         PtrField field;
 
         if (extract_field == "int")
-            field = PtrField(new Field_long(name, type, maybe_null));
+            field = PtrField(new Field_long(name, type));
 
         else if (extract_field == "double")
-            field = PtrField(new Field_double(name, type, maybe_null));
+            field = PtrField(new Field_double(name, type));
 
         else if (extract_field == "float")
-            field = PtrField(new Field_float(name, type, maybe_null));
+            field = PtrField(new Field_float(name, type));
 
         else if (extract_field == "timestamp")
-            field = PtrField(new Field_timestamp(name, type, maybe_null));
+            field = PtrField(new Field_timestamp(name, type));
 
         else if (extract_field == "datetime")
-            field = PtrField(new Field_datetime(name, type, maybe_null));
+            field = PtrField(new Field_datetime(name, type));
 
         else if (extract_field == "date")
-            field = PtrField(new Field_date(name, type, maybe_null));
+            field = PtrField(new Field_date(name, type));
 
         else if (extract_field == "year")
-            field = PtrField(new Field_year(name, type, maybe_null));
+            field = PtrField(new Field_year(name, type));
 
         else if (extract_field == "time")
-            field = PtrField(new Field_time(name, type, maybe_null));
+            field = PtrField(new Field_time(name, type));
 
         else if (extract_field == "enum")
-            field = PtrField(new Field_enum(name, type, maybe_null));
+            field = PtrField(new Field_enum(name, type));
 
         else if (extract_field == "set")
-            field = PtrField(new Field_set(name, type, maybe_null));
+            field = PtrField(new Field_set(name, type));
 
         else if (extract_field == "varchar")
             //для этого поля количество байт определяется исходя из количества элементов в строке
-            field = PtrField(new Field_varstring(name, type, maybe_null));
+            field = PtrField(new Field_varstring(name, type));
 
         else if (extract_field == "char")
-            field = PtrField(new Field_string(name, type, maybe_null));
+            field = PtrField(new Field_string(name, type));
 
         else if (extract_field == "tinyint")
-            field = PtrField(new Field_tiny(name, type, maybe_null));
+            field = PtrField(new Field_tiny(name, type));
 
         else if (extract_field == "smallint")
-            field = PtrField(new Field_short(name, type, maybe_null));
+            field = PtrField(new Field_short(name, type));
 
         else if (extract_field == "mediumint")
-            field = PtrField(new Field_medium(name, type, maybe_null));
+            field = PtrField(new Field_medium(name, type));
 
         else if (extract_field == "bigint")
-            field = PtrField(new Field_longlong(name, type, maybe_null));
+            field = PtrField(new Field_longlong(name, type));
 
         else if (extract_field == "text")
-            field = PtrField(new Field_blob(name, type, maybe_null));
+            field = PtrField(new Field_blob(name, type));
 
         else if (extract_field == "tinytext")
-            field = PtrField(new Field_tinyblob(name, type, maybe_null));
+            field = PtrField(new Field_tinyblob(name, type));
 
         else if (extract_field == "mediumtext")
-            field = PtrField(new Field_mediumblob(name, type, maybe_null));
+            field = PtrField(new Field_mediumblob(name, type));
 
         else if (extract_field == "longtext")
-            field = PtrField(new Field_longblob(name, type, maybe_null));
+            field = PtrField(new Field_longblob(name, type));
 
         else if (extract_field == "blob")
-            field = PtrField(new Field_blob(name, type, maybe_null));
+            field = PtrField(new Field_blob(name, type));
 
         else if (extract_field == "tinyblob")
-            field = PtrField(new Field_tinyblob(name, type, maybe_null));
+            field = PtrField(new Field_tinyblob(name, type));
 
         else if (extract_field == "mediumblob")
-            field = PtrField(new Field_mediumblob(name, type, maybe_null));
+            field = PtrField(new Field_mediumblob(name, type));
 
         else if (extract_field == "longblob")
-            field = PtrField(new Field_longblob(name, type, maybe_null));
+            field = PtrField(new Field_longblob(name, type));
 
         else {
             LOG_ERROR(log, "createTable: class name don't exist: " << extract_field );
@@ -275,18 +228,7 @@ void Slave::createTable(RelayLogInfo& rli,
 
         table->fields.push_back(field);
 
-        // 
-        if ( (extract_field == "blob") || (extract_field == "text") ||
-             ( (extract_field == "varchar") && (row_type != "Fixed") ) ) {
-            db_create_options |= HA_OPTION_PACK_RECORD;
-        }
-
     }
-
-
-    table->setNullFields(null_fields);
-
-    table->setDbOptions(db_create_options);
 
 
     rli.setTable(tbl_name, db_name, table);

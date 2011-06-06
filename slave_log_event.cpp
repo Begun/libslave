@@ -341,10 +341,6 @@ unsigned char* unpack_row(boost::shared_ptr<slave::Table> table,
 
         if (null_bits & null_mask) {
 
-            if (!field->getMayBeNull()) {
-                LOG_INFO(log, "WARNING: got libslave null for non-nullable field: " << field->getFieldName());
-            }
-
             LOG_TRACE(log, "set_null found");
 
         } else {
@@ -363,7 +359,7 @@ unsigned char* unpack_row(boost::shared_ptr<slave::Table> table,
 
         null_mask <<= 1;
 
-        LOG_TRACE(log, "field: " << field->getFieldName() << (field->getMayBeNull() ? " (nullable)" : ""));
+        LOG_TRACE(log, "field: " << field->getFieldName());
 
     }
 
