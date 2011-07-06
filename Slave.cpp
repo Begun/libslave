@@ -64,6 +64,12 @@ void Slave::init()
     LOG_TRACE(log, "Libslave initialized OK");
 }
 
+void Slave::close_connection()
+{
+    ::shutdown(mysql.net.fd, SHUT_RDWR);
+    ::close(mysql.net.fd);
+}
+
 
 void Slave::createDatabaseStructure_(table_order_t& tabs, RelayLogInfo& rli) const {
 
@@ -335,7 +341,8 @@ void Slave::get_remote_binlog( const boost::function< bool() >& _interruptFlag) 
     //генерируем server_id
     generateSlaveId();
 
-    MYSQL mysql;
+    // Moved to Slave member
+    // MYSQL mysql;
 
     raii_mysql_connector __conn(&mysql, m_master_info);
 
@@ -427,6 +434,14 @@ connected:
                 if (mysql_error_number == 2013) {
 
                     LOG_ERROR(log, "Error from MySQL: " << mysql_error(&mysql) );
+
+                    // Check if connection was closed specially by user
+                    if (_interruptFlag())
+                    {
+                        LOG_INFO(log, "Interrupt flag is true, breaking loop");
+                        break;
+                    }
+
                     stats::setReconnectCount();
 
                 }
