@@ -812,6 +812,12 @@ static bool checkAlterQuery(const std::string& str)
     return false;
 }
 
+bool checkCreateQuery(const std::string& str)
+{
+    if (0 == ::strncasecmp("create table ", str.c_str(), 13))
+        return true;
+    return false;
+}
 
 
 int Slave::process_event(const slave::Basic_event_info& bei, RelayLogInfo &m_rli, unsigned long long pos)
@@ -833,7 +839,7 @@ int Slave::process_event(const slave::Basic_event_info& bei, RelayLogInfo &m_rli
 
         LOG_TRACE(log, "Received QUERY_EVENT: " << qei.query);
 
-        if (checkAlterQuery(qei.query)) {
+        if (checkAlterQuery(qei.query) || checkCreateQuery(qei.query)) {
 
             LOG_DEBUG(log, "Rebuilding database structure.");
             //перестраиваем структуру БД
