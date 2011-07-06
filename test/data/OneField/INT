@@ -1,0 +1,20 @@
+define, INT NOT NULL
+data, 0, 0
+data, 1, 1
+data, -1, -1
+data, 10, 10
+data, 100, 100
+data, 1000, 1000
+data, 999999999, 999999999
+
+define, INT(2) NOT NULL
+data, 0, 0
+data, 1, 1
+data, 99, 99
+data, 100, 100
+
+define, INT UNSIGNED NOT NULL
+data, 0, 0
+data, 1, 1
+data, -1, 0
+data, -10, 0

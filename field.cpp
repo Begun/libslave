@@ -317,7 +317,7 @@ Field_string::Field_string(const std::string& field_name_arg, const std::string&
 
 
 
-Field_varstring::Field_varstring(const std::string& field_name_arg, const std::string& type):
+Field_varstring::Field_varstring(const std::string& field_name_arg, const std::string& type, const collate_info& collate):
     Field_longstr(field_name_arg, type) {
 
     //для этого поля количество байт определяется исходя из количества элементов в строке
@@ -331,13 +331,15 @@ Field_varstring::Field_varstring(const std::string& field_name_arg, const std::s
 
     //получаем размер строки
     std::string str_count(type, b+1, e-b-1); 
+    int symbols = atoi(str_count.c_str());
+    int bytes = symbols * collate.maxlen;
 
     //количество байт, занимаемых в памяти
 
-    length_bytes = ((::atoi(str_count.c_str()) < 256) ? 1 : 2);
+    length_bytes = ((bytes < 256) ? 1 : 2);
 	
     //длина символов
-    field_length = ::atoi(str_count.c_str());
+    field_length = symbols;
 }
 
 const char* Field_varstring::unpack(const char* from) {
