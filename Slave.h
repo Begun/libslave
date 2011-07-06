@@ -165,7 +165,8 @@ protected:
     std::pair<std::string,unsigned int> getLastBinlog();
 		
     void createTable(RelayLogInfo& rli,
-                     const std::string& db_name, const std::string& tbl_name) const;
+                     const std::string& db_name, const std::string& tbl_name,
+                     const collate_map_t& collate_map, nanomysql::Connection& conn) const;
 		
     void register_slave_on_master(const bool m_register, MYSQL* mysql);
 		

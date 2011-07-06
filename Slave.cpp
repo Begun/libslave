@@ -69,10 +69,16 @@ void Slave::createDatabaseStructure_(table_order_t& tabs, RelayLogInfo& rli) con
 
     LOG_TRACE(log, "enter: createDatabaseStructure");
 
+    nanomysql::Connection conn(m_master_info.host.c_str(), m_master_info.user.c_str(),
+                               m_master_info.password.c_str(), "", m_master_info.port);
+
+    // Получаем описание charset'ов и collate'ов из базы
+    const collate_map_t collate_map = readCollateMap(conn);
+
     for (table_order_t::const_iterator it = tabs.begin(); it != tabs.end(); ++ it) {
 
         LOG_INFO( log, "Creating database structure for: " << it->first << ", Creating table for: " << it->second );
-        createTable(rli, it->first, it->second);
+        createTable(rli, it->first, it->second, collate_map, conn);
     }
 
     LOG_TRACE(log, "exit: createDatabaseStructure");
@@ -81,16 +87,14 @@ void Slave::createDatabaseStructure_(table_order_t& tabs, RelayLogInfo& rli) con
 
 
 void Slave::createTable(RelayLogInfo& rli,
-                        const std::string& db_name, const std::string& tbl_name) const {
+                        const std::string& db_name, const std::string& tbl_name,
+                        const collate_map_t& collate_map, nanomysql::Connection& conn) const {
 
     LOG_TRACE(log, "enter: createTable " << db_name << " " << tbl_name);
 
-    nanomysql::Connection conn(m_master_info.host.c_str(), m_master_info.user.c_str(),
-                               m_master_info.password.c_str(), "", m_master_info.port);
-
     nanomysql::Connection::result_t res;
     
-    conn.query("DESCRIBE " + db_name + "." + tbl_name);
+    conn.query("SHOW FULL COLUMNS FROM " + tbl_name + " IN " + db_name);
     conn.store(res);
 
     boost::shared_ptr<Table> table(new Table(db_name, tbl_name));
@@ -102,6 +106,8 @@ void Slave::createTable(RelayLogInfo& rli,
 
         //row.at(0) - имя столбца
         //row.at(1) - тип столбца
+        //row.at(2) - collation
+        //row.at(3) - can be null
 
         std::map<std::string,nanomysql::Connection::field>::const_iterator z = i->find("Field");
 
@@ -143,8 +149,24 @@ void Slave::createTable(RelayLogInfo& rli,
         if (extract_field.empty())
             throw std::runtime_error("Slave::create_table(): Regexp error, type not found");
 
-        LOG_DEBUG(log, "Created column: name-type: " << name << " - " << type
-                  << " Field type: " << extract_field );
+        collate_info ci;
+        if ("varchar" == extract_field || "char" == extract_field)
+        {
+            z = i->find("Collation");
+            if (z == i->end())
+                throw std::runtime_error("Slave::create_table(): DESCRIBE query did not return 'Collation' for field '" + name + "'");
+            const std::string collate = z->second.data;
+            collate_map_t::const_iterator it = collate_map.find(collate);
+            if (collate_map.end() == it)
+                throw std::runtime_error("Slave::create_table(): cannot find collate '" + collate + "' from field "
+                        + name + " type " + type + " in collate info map");
+            ci = it->second;
+            LOG_DEBUG(log, "Created column: name-type: " << name << " - " << type
+                      << " Field type: " << extract_field << " Collation: " << ci.name);
+        }
+        else
+            LOG_DEBUG(log, "Created column: name-type: " << name << " - " << type
+                      << " Field type: " << extract_field );
 
         PtrField field;
 
@@ -179,11 +201,11 @@ void Slave::createTable(RelayLogInfo& rli,
             field = PtrField(new Field_set(name, type));
 
         else if (extract_field == "varchar")
-            //для этого поля количество байт определяется исходя из количества элементов в строке
-            field = PtrField(new Field_varstring(name, type));
+            //для этого поля количество байт определяется исходя из максимального количества элементов в строке
+            field = PtrField(new Field_varstring(name, type, ci));
 
         else if (extract_field == "char")
-            field = PtrField(new Field_string(name, type));
+            field = PtrField(new Field_varstring(name, type, ci));
 
         else if (extract_field == "tinyint")
             field = PtrField(new Field_tiny(name, type));
