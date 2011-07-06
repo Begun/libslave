@@ -1,11 +1,12 @@
 
 # Please specify the directories with boost and mysql include files here.
-BOOST_INCLUDES = /begun/daemon/include
-MYSQL_INCLUDES = /begun/daemon/include/mysql
+PREFIX=/begun/daemon
+BOOST_INCLUDES = ${PREFIX}/include
+MYSQL_INCLUDES = ${PREFIX}/include/mysql
 
 CXX = g++
 CFLAGS = -I$(BOOST_INCLUDES) -I$(MYSQL_INCLUDES) -O3 -finline-functions -Wno-inline -Wall -pthread
-LFLAGS = -L/begun/daemon/lib64/mysql -lmysqlclient_r
+LFLAGS = -L${PREFIX}/lib64/mysql -lmysqlclient_r
 
 IDEPS = Logging.h Slave.h SlaveStats.h field.h nanomysql.h recordset.h relayloginfo.h slave_log_event.h table.h collate.h
 OBJS = Slave.o field.o slave_log_event.o collate.o
