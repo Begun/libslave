@@ -1,0 +1,117 @@
+define, VARCHAR(1) NOT NULL
+data, 'a', a
+data, 'aa', a
+data, 'abc', a
+data, 'bca', b
+data, 'а', а
+data, 'аа', а
+data, 'абв', а
+data, 'вба', в
+
+define, VARCHAR(8) NOT NULL
+data, 'description', descript
+data, 'full description with spaces', full des
+data, 'однословник', однослов
+data, 'тут пробел', тут проб
+
+define, VARCHAR(15) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full descriptio
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробела
+
+define, VARCHAR(16) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелам
+
+define, VARCHAR(31) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, VARCHAR(32) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, VARCHAR(63) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, VARCHAR(64) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, VARCHAR(65) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, VARCHAR(85) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, VARCHAR(85) NOT NULL
+data, 'abcdefghijklmnopqrstuvwxyz', abcdefghijklmnopqrstuvwxyz
+data, 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvw', abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvw
+data, 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя', абвгдеёжзийклмнопрстуфхцчшщъыьэюя
+data, 'абвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюя', абвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрс
+
+define, VARCHAR(86) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, VARCHAR(126) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, VARCHAR(127) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, VARCHAR(128) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, VARCHAR(255) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, VARCHAR(255) NOT NULL
+data, 'abcdefghijklmnopqrstuvwxyz', abcdefghijklmnopqrstuvwxyz
+data, 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvw', abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvw
+data, 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя', абвгдеёжзийклмнопрстуфхцчшщъыьэюя
+data, 'абвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюя', абвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюя
+
+define, VARCHAR(256) NOT NULL
+data, 'abcdefghijklmnopqrstuvwxyz', abcdefghijklmnopqrstuvwxyz
+data, 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvw', abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvw
+data, 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя', абвгдеёжзийклмнопрстуфхцчшщъыьэюя
+data, 'абвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюя', абвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюя
+
+define, VARCHAR(512) NOT NULL
+data, 'abcdefghijklmnopqrstuvwxyz', abcdefghijklmnopqrstuvwxyz
+data, 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvw', abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvw
+data, 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя', абвгдеёжзийклмнопрстуфхцчшщъыьэюя
+data, 'абвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюя', абвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюя

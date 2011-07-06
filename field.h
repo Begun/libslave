@@ -22,6 +22,8 @@
 
 #include <boost/any.hpp>
 
+#include "collate.h"
+
 //конфликт с макросом, опредленном в MYSQL
 #ifdef test
 #undef test
@@ -229,7 +231,8 @@ class Field_varstring: public Field_longstr {
     unsigned int pack_length() const { return (unsigned int) field_length+length_bytes; }
 
 public:
-    Field_varstring(const std::string& field_name_arg, const std::string& type);
+    Field_varstring(const std::string& field_name_arg, const std::string& type,
+            const collate_info& collate);
 	
     const char* unpack(const char* from);
 };
