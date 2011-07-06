@@ -35,4 +35,7 @@ test.out: test/test.cpp $(IDEPS) $(STATIC_LIB)
 
 test: test.out
 
+unit_test.out: test/unit_test.cpp $(IDEPS) $(STATIC_LIB)
+	$(CXX) $(CFLAGS) -I. test/unit_test.cpp $(STATIC_LIB) $(LFLAGS) -lboost_unit_test_framework-mt -lboost_thread-mt -o unit_test.out
 
+unit_test: unit_test.out

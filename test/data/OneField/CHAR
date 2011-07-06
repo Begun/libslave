@@ -1,0 +1,99 @@
+define, CHAR(1) NOT NULL
+data, 'a', a
+data, 'aa', a
+data, 'abc', a
+data, 'bca', b
+data, 'а', а
+data, 'аа', а
+data, 'абв', а
+data, 'вба', в
+
+define, CHAR(8) NOT NULL
+data, 'description', descript
+data, 'full description with spaces', full des
+data, 'однословник', однослов
+data, 'тут пробел', тут проб
+
+define, CHAR(15) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full descriptio
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробела
+
+define, CHAR(16) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелам
+
+define, CHAR(31) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, CHAR(32) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, CHAR(63) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, CHAR(64) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, CHAR(65) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, CHAR(85) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, CHAR(85) NOT NULL
+data, 'abcdefghijklmnopqrstuvwxyz', abcdefghijklmnopqrstuvwxyz
+data, 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvw', abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvw
+data, 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя', абвгдеёжзийклмнопрстуфхцчшщъыьэюя
+data, 'абвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюя', абвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрс
+
+define, CHAR(86) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, CHAR(126) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, CHAR(127) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, CHAR(128) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
+
+define, CHAR(255) NOT NULL
+data, 'description', description
+data, 'full description with spaces', full description with spaces
+data, 'однословник', однословник
+data, 'фраза с пробелами', фраза с пробелами
