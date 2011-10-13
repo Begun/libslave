@@ -143,7 +143,12 @@ public:
     typedef std::vector<std::map<std::string, field> > result_t;
 
     void store(result_t& out) {
+#ifndef __GXX_EXPERIMENTAL_CXX0X__
         use(boost::bind(&result_t::push_back, &out, _1));
+#else
+        use( [&out] (const std::map<std::string,field>& f) { out.push_back(f); } );
+#endif
+
     }
 
 
