@@ -123,7 +123,7 @@ void Slave::createTable(RelayLogInfo& rli,
         //row.at(2) - collation
         //row.at(3) - can be null
 
-        std::map<std::string,nanomysql::Connection::field>::const_iterator z = i->find("Field");
+        std::map<std::string,nanomysql::field>::const_iterator z = i->find("Field");
 
         if (z == i->end())
             throw std::runtime_error("Slave::create_table(): DESCRIBE query did not return 'Field'");
@@ -586,7 +586,7 @@ std::map<std::string,std::string> Slave::getRowType(const std::string& db_name,
         //row[0] - содержит имя таблицы
         //row[3] - содержит row_format
 
-        std::map<std::string,nanomysql::Connection::field>::const_iterator z = i->find("Name");
+        std::map<std::string,nanomysql::field>::const_iterator z = i->find("Name");
 
         if (z == i->end())
             throw std::runtime_error("Slave::create_table(): SHOW TABLE STATUS query did not return 'Name'");
@@ -730,7 +730,7 @@ void Slave::check_master_binlog_format()
 
     if (res.size() == 1 && res[0].size() == 2) {
 
-        std::map<std::string,nanomysql::Connection::field>::const_iterator z = res[0].find("Value");
+        std::map<std::string,nanomysql::field>::const_iterator z = res[0].find("Value");
 
         if (z == res[0].end())
             throw std::runtime_error("Slave::create_table(): SHOW GLOBAL VARIABLES query did not return 'Value'");
@@ -952,7 +952,7 @@ void Slave::generateSlaveId()
 
         //row[0] - содержит имя server_id
 
-        std::map<std::string,nanomysql::Connection::field>::const_iterator z = i->find("Server_id");
+        std::map<std::string,nanomysql::field>::const_iterator z = i->find("Server_id");
 
         if (z == i->end())
             throw std::runtime_error("Slave::create_table(): SHOW SLAVE HOSTS query did not return 'Server_id'");
@@ -993,7 +993,7 @@ std::pair<std::string,unsigned int> Slave::getLastBinlog()
 
     if (res.size() == 1 && res[0].size() == 4) {
 
-        std::map<std::string,nanomysql::Connection::field>::const_iterator z = res[0].find("File");
+        std::map<std::string,nanomysql::field>::const_iterator z = res[0].find("File");
 
         if (z == res[0].end())
             throw std::runtime_error("Slave::create_table(): SHOW SLAVE HOSTS query did not return 'File'");

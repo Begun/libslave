@@ -22,7 +22,7 @@ collate_map_t slave::readCollateMap(nanomysql::Connection& conn)
 
     for (nanomysql::Connection::result_t::const_iterator i = nanores.begin(); i != nanores.end(); ++i)
     {
-        std::map<std::string, nanomysql::Connection::field>::const_iterator z = i->find("Charset");
+        std::map<std::string, nanomysql::field>::const_iterator z = i->find("Charset");
         if (z == i->end())
             throw std::runtime_error("Slave::readCollateMap(): SHOW CHARACTER SET query did not return 'Charset'");
         const std::string name = z->second.data;
@@ -44,7 +44,7 @@ collate_map_t slave::readCollateMap(nanomysql::Connection& conn)
     {
         collate_info ci;
 
-        std::map<std::string, nanomysql::Connection::field>::const_iterator z = i->find("Collation");
+        std::map<std::string, nanomysql::field>::const_iterator z = i->find("Collation");
         if (z == i->end())
             throw std::runtime_error("Slave::readCollateMap(): SHOW COLLATION query did not return 'Collation'");
         ci.name = z->second.data;
