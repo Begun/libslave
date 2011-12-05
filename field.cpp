@@ -108,9 +108,6 @@ const char* Field_longlong::unpack(const char* from) {
 Field_real::Field_real(const std::string& field_name_arg, const std::string& type):
     Field_num(field_name_arg, type) {}
 
-Field_decimal::Field_decimal(const std::string& field_name_arg, const std::string& type):
-    Field_real(field_name_arg, type) {}
-
 Field_double::Field_double(const std::string& field_name_arg, const std::string& type):
     Field_real(field_name_arg, type) {}
 
@@ -297,25 +294,6 @@ const char* Field_longstr::unpack(const char* from) {
 
     return from + length_row;
 }
-
-Field_string::Field_string(const std::string& field_name_arg, const std::string& type):
-    Field_longstr(field_name_arg, type) {
-
-    //для этого поля количество байт определяется исходя из количества символов в строке
-    std::string::size_type b = type.find('(', 0);
-    std::string::size_type e = type.find(')', 0);
-
-    if (b == std::string::npos || e == std::string::npos) {
-        throw std::runtime_error("Field_string: Incorrect field CHAR");
-    }
-
-    //получаем размер строки
-    std::string str_count(type, b+1, e-b-1);
-
-    field_length = ::atoi(str_count.c_str());
-}
-
-
 
 Field_varstring::Field_varstring(const std::string& field_name_arg, const std::string& type, const collate_info& collate):
     Field_longstr(field_name_arg, type) {

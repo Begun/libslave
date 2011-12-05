@@ -88,14 +88,6 @@ public:
     Field_real(const std::string& field_name_arg, const std::string& type);
 };
 
-class Field_decimal: public Field_real {
-public:
-    Field_decimal(const std::string& field_name_arg, const std::string& type);
-};
-
-class Field_new_decimal: public Field_num {
-};
-
 class Field_tiny: public Field_num {
     unsigned int pack_length() const { return 1; }
 public:
@@ -151,10 +143,6 @@ public:
     const char* unpack(const char* from);
 };
 
-class Field_null: public Field_str {
-    unsigned int pack_length() const { return 0; }
-};
-
 class Field_timestamp: public Field_str {
     unsigned int pack_length() const { return 4; }
 public:
@@ -176,10 +164,6 @@ public:
     const char* unpack(const char* from);
 };
 
-class Field_newdate: public Field_str {
-    unsigned int pack_length() const { return 3; }
-};
-
 class Field_time: public Field_str {
     unsigned int pack_length() const { return 3; }
 public:
@@ -195,11 +179,6 @@ public:
     Field_datetime(const std::string& field_name_arg, const std::string& type);
 
     const char* unpack(const char* from);
-};
-
-class Field_string: public Field_longstr {
-public:
-    Field_string(const std::string& field_name_arg, const std::string& type);
 };
 
 class Field_varstring: public Field_longstr {
@@ -242,8 +221,6 @@ class Field_longblob: public Field_blob {
 public:
     Field_longblob(const std::string& field_name_arg, const std::string& type);
 };
-
-class Field_geom: public Field_blob { };
 
 class Field_enum: public Field_str {
 
