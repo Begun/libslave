@@ -21,17 +21,15 @@
 
 #include "nanomysql.h"
 
+#define packet_end_data 1
 
-namespace slave
+#define ER_NET_PACKET_TOO_LARGE 1153
+#define ER_MASTER_FATAL_ERROR_READING_BINLOG 1236
+#define BIN_LOG_HEADER_SIZE 4
+
+
+namespace
 {
-
-unsigned char *net_store_data(unsigned char *to, const unsigned char *from, unsigned int length)
-{
-    to = net_store_length_fast(to,length);
-    ::memcpy(to,from,length);
-    return to+length;
-}
-
 unsigned char *net_store_length_fast(unsigned char *pkg, unsigned int length)
 {
     unsigned char *packet=(unsigned char*) pkg;
@@ -45,10 +43,16 @@ unsigned char *net_store_length_fast(unsigned char *pkg, unsigned int length)
     return packet+2;
 }
 
+unsigned char *net_store_data(unsigned char *to, const unsigned char *from, unsigned int length)
+{
+    to = net_store_length_fast(to,length);
+    ::memcpy(to,from,length);
+    return to+length;
+}
+}// anonymous-namespace
 
 
-
-
+using namespace slave;
 
 
 void Slave::init()
@@ -71,8 +75,8 @@ void Slave::close_connection()
 }
 
 
-void Slave::createDatabaseStructure_(table_order_t& tabs, RelayLogInfo& rli) const {
-
+void Slave::createDatabaseStructure_(table_order_t& tabs, RelayLogInfo& rli) const
+{
     LOG_TRACE(log, "enter: createDatabaseStructure");
 
     nanomysql::Connection conn(m_master_info.host.c_str(), m_master_info.user.c_str(),
@@ -94,8 +98,8 @@ void Slave::createDatabaseStructure_(table_order_t& tabs, RelayLogInfo& rli) con
 
 void Slave::createTable(RelayLogInfo& rli,
                         const std::string& db_name, const std::string& tbl_name,
-                        const collate_map_t& collate_map, nanomysql::Connection& conn) const {
-
+                        const collate_map_t& collate_map, nanomysql::Connection& conn) const
+{
     LOG_TRACE(log, "enter: createTable " << db_name << " " << tbl_name);
 
     nanomysql::Connection::result_t res;
@@ -263,9 +267,10 @@ void Slave::createTable(RelayLogInfo& rli,
 
 }
 
-
-struct raii_mysql_connector {
-
+namespace
+{
+struct raii_mysql_connector
+{
     MYSQL* mysql;
     MasterInfo& m_master_info;
 
@@ -329,13 +334,11 @@ struct raii_mysql_connector {
         LOG_TRACE(log, "exit: connect_to_master");
     }
 };
+}// anonymous-namespace
 
 
-
-void Slave::get_remote_binlog( const boost::function< bool() >& _interruptFlag) {
-
-
-
+void Slave::get_remote_binlog( const boost::function< bool() >& _interruptFlag)
+{
     int count_packet = 0;
 
     //генерируем server_id
@@ -350,7 +353,7 @@ void Slave::get_remote_binlog( const boost::function< bool() >& _interruptFlag) 
 
     register_slave_on_master(true, &mysql);
 
-    bool do_master_info_file = (m_master_info.master_info_file.size() > 0);
+    const bool do_master_info_file = (m_master_info.master_info_file.size() > 0);
 
 connected:
 
@@ -394,7 +397,6 @@ connected:
     while (!_interruptFlag()) {
 
         try {
-
 
             LOG_TRACE(log, "-- reading event --");
 
@@ -558,8 +560,8 @@ connected:
 }
 
 std::map<std::string,std::string> Slave::getRowType(const std::string& db_name,
-                                                    const std::set<std::string>& tbl_names) const {
-
+                                                    const std::set<std::string>& tbl_names) const
+{
     nanomysql::Connection conn(m_master_info.host.c_str(), m_master_info.user.c_str(),
                                m_master_info.password.c_str(), "", m_master_info.port);
 
@@ -605,10 +607,8 @@ std::map<std::string,std::string> Slave::getRowType(const std::string& db_name,
     return ret;
 }
 
-
-
-void Slave::register_slave_on_master(const bool m_register, MYSQL* mysql) {
-
+void Slave::register_slave_on_master(bool m_register, MYSQL* mysql)
+{
     uchar buf[1024], *pos= buf;
 
     unsigned int report_host_len=0, report_user_len=0, report_password_len=0;
@@ -659,9 +659,8 @@ void Slave::register_slave_on_master(const bool m_register, MYSQL* mysql) {
     }
 }
 
-
-void Slave::check_master_version() {
-
+void Slave::check_master_version()
+{
     nanomysql::Connection conn(m_master_info.host.c_str(), m_master_info.user.c_str(),
                                m_master_info.password.c_str(), "", m_master_info.port);
 
@@ -713,11 +712,10 @@ void Slave::check_master_version() {
     }
 
     throw std::runtime_error("Slave::check_master_version(): could not SELECT VERSION()");
-
 }
 
-void Slave::check_master_binlog_format() {
-
+void Slave::check_master_binlog_format()
+{
     nanomysql::Connection conn(m_master_info.host.c_str(), m_master_info.user.c_str(),
                                m_master_info.password.c_str(), "", m_master_info.port);
 
@@ -747,12 +745,10 @@ void Slave::check_master_binlog_format() {
     throw std::runtime_error("Slave::check_binlog_format(): Could not SHOW GLOBAL VARIABLES LIKE 'binlog_format'");
 }
 
-
-
-
 // Метод проверяет, что в Query_event пришел ALTER TABLE
-
-static bool checkAlterQuery(const std::string& str)
+namespace
+{
+bool checkAlterQuery(const std::string& str)
 {
     //проверяем на присутствие в запросе ALTER TABLE
     //RegularExpression regexp("^\\s*ALTER\\s+TABLE)", RegularExpression::RE_CASELESS);
@@ -818,6 +814,7 @@ bool checkCreateQuery(const std::string& str)
         return true;
     return false;
 }
+}// anonymouos-namespace
 
 
 int Slave::process_event(const slave::Basic_event_info& bei, RelayLogInfo &m_rli, unsigned long long pos)
@@ -881,8 +878,8 @@ int Slave::process_event(const slave::Basic_event_info& bei, RelayLogInfo &m_rli
     return 0;
 }
 
-void Slave::request_dump(const std::string& logname, unsigned long start_position, MYSQL* mysql) {
-
+void Slave::request_dump(const std::string& logname, unsigned long start_position, MYSQL* mysql)
+{
     uchar buf[128];
 
     /*
@@ -909,7 +906,6 @@ void Slave::request_dump(const std::string& logname, unsigned long start_positio
     }
 }
 
-
 ulong Slave::read_event(MYSQL* mysql)
 {
 
@@ -919,7 +915,7 @@ ulong Slave::read_event(MYSQL* mysql)
     len = cli_safe_read(mysql);
 
     if (len == packet_error) {
-        LOG_ERROR(log, "Myslave:Error reading packet from server: " << mysql_error(mysql)
+        LOG_ERROR(log, "Myslave: Error reading packet from server: " << mysql_error(mysql)
                   << "; mysql_error: " << mysql_errno(mysql));
 
         return packet_error;
@@ -934,7 +930,6 @@ ulong Slave::read_event(MYSQL* mysql)
 
     return len;
 }
-
 
 void Slave::generateSlaveId()
 {
@@ -980,9 +975,6 @@ void Slave::generateSlaveId()
     LOG_DEBUG(log, "Generated m_server_id = " << m_server_id);
 }
 
-
-
-
 std::pair<std::string,unsigned int> Slave::getLastBinlog()
 {
 
@@ -1016,9 +1008,3 @@ std::pair<std::string,unsigned int> Slave::getLastBinlog()
 
     throw std::runtime_error("Slave::getLastBinLog(): Could not SHOW MASTER STATUS");
 }
-
-
-
-
-} //namespace slave
-

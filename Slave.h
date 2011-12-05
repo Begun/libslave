@@ -40,19 +40,8 @@
 #include "SlaveStats.h"
 
 
-
-#define packet_end_data 1
-
-#define ER_NET_PACKET_TOO_LARGE 1153
-#define ER_MASTER_FATAL_ERROR_READING_BINLOG 1236
-#define BIN_LOG_HEADER_SIZE	4
-
-
-
 namespace slave
 {
-
-unsigned char *net_store_length_fast(unsigned char *pkg, unsigned int length);
 
 struct MasterInfo {
 
@@ -68,7 +57,6 @@ struct MasterInfo {
 
     MasterInfo() : port(3306), master_log_pos(0), connect_retry(10) {}
 };
-
 
 
 class Slave
@@ -150,12 +138,6 @@ public:
 protected:
 
 
-    int connect_to_master(int reconnect = 0);
-
-    int safe_reconnect();
-
-    int safe_connect();
-
     void check_master_version();
 
     void check_master_binlog_format();
@@ -175,14 +157,12 @@ protected:
                      const std::string& db_name, const std::string& tbl_name,
                      const collate_map_t& collate_map, nanomysql::Connection& conn) const;
 
-    void register_slave_on_master(const bool m_register, MYSQL* mysql);
+    void register_slave_on_master(bool m_register, MYSQL* mysql);
 
     void generateSlaveId();
 
 };
 
-
-
-}
+}// slave
 
 #endif
