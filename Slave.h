@@ -86,6 +86,9 @@ public:
 
     Slave(MasterInfo& _master_info) : m_master_info(_master_info) {}
 
+    typedef std::pair<std::string, unsigned int> binlog_pos_t;
+    binlog_pos_t getLastBinlog();
+
     void setCallback(const std::string& _db_name, const std::string& _tbl_name, callback _callback) {
 
         m_table_order.push_back(std::make_pair(_db_name, _tbl_name));
@@ -143,8 +146,6 @@ protected:
 
     std::map<std::string,std::string> getRowType(const std::string& db_name,
                                                  const std::set<std::string>& tbl_names) const;
-
-    std::pair<std::string,unsigned int> getLastBinlog();
 
     void createTable(RelayLogInfo& rli,
                      const std::string& db_name, const std::string& tbl_name,

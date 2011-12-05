@@ -374,7 +374,7 @@ connected:
     if (!m_master_info.master_log_pos) {
 
         //получаем последнюю версию бинлога и смещение
-        std::pair<std::string,unsigned int> row = getLastBinlog();
+        const binlog_pos_t row = getLastBinlog();
 
         m_master_info.master_log_name = row.first;
         m_master_info.master_log_pos = row.second;
