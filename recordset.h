@@ -16,13 +16,9 @@
 #ifndef __SLAVE_RECORDSET_H_
 #define __SLAVE_RECORDSET_H_
 
-#include <map>
-#include <vector>
-#include <string>
-
-#include <boost/shared_ptr.hpp>
 #include <boost/any.hpp>
-
+#include <map>
+#include <string>
 
 namespace slave
 {
@@ -48,6 +44,6 @@ struct RecordSet
     RecordSet(): master_id(0) {}
 };
 
-}
+}// slave
 
 #endif

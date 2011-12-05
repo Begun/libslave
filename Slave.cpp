@@ -21,6 +21,10 @@
 
 #include "nanomysql.h"
 
+#include <mysql/my_global.h>
+#include <mysql/m_ctype.h>
+#include <mysql/sql_common.h>
+
 #define packet_end_data 1
 
 #define ER_NET_PACKET_TOO_LARGE 1153

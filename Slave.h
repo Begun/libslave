@@ -27,14 +27,7 @@
 #include <map>
 #include <set>
 
-
-#include <mysql/my_global.h>
-#undef min
-#undef max
-
 #include <mysql/mysql.h>
-#include <mysql/m_ctype.h>
-#include <mysql/sql_common.h>
 
 #include "slave_log_event.h"
 #include "SlaveStats.h"
