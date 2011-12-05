@@ -84,14 +84,9 @@ public:
 
         f >> pos;
 
-        size_t n = f.tellg();
-        f.seekg(0, std::ios::end);
-        size_t e = f.tellg();
-        f.seekg(n+1, std::ios::beg);
-
-        logname.resize(e - n - 1);
-
-        f.getline((char*)logname.c_str(), logname.size());
+        char c;
+        f.get(c); // \n
+        getline(f, logname);
 
         master_log_pos = pos;
         master_log_name = logname;
