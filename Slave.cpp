@@ -361,7 +361,8 @@ void Slave::get_remote_binlog( const boost::function< bool() >& _interruptFlag)
 
 connected:
 
-    m_master_info.master_log_pos = 0;
+    // FIXME why to do that after disconnect?
+    // m_master_info.master_log_pos = 0;
 
     if (do_master_info_file) {
 
@@ -532,6 +533,7 @@ connected:
                 m_master_info.master_log_name = rei.new_log_ident;
                 m_master_info.master_log_pos = rei.pos; //всегда равно 4
 
+                LOG_TRACE(log, "new position is " << m_master_info.master_log_name << ":" << m_master_info.master_log_pos);
                 LOG_TRACE(log, "ROTATE_EVENT processed OK.");
             }
 

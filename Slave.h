@@ -84,20 +84,24 @@ public:
 
     Slave() {}
 
-    Slave(MasterInfo& _master_info) : m_master_info(_master_info) {}
+    Slave(const MasterInfo& _master_info) : m_master_info(_master_info) {}
+
+    void setMasterInfo(const MasterInfo& aMasterInfo) { m_master_info = aMasterInfo; }
+    const MasterInfo& masterInfo() const { return m_master_info; }
 
     typedef std::pair<std::string, unsigned int> binlog_pos_t;
     binlog_pos_t getLastBinlog();
 
-    void setCallback(const std::string& _db_name, const std::string& _tbl_name, callback _callback) {
-
+    void setCallback(const std::string& _db_name, const std::string& _tbl_name, callback _callback)
+    {
         m_table_order.push_back(std::make_pair(_db_name, _tbl_name));
         m_callbacks[std::make_pair(_db_name, _tbl_name)] = _callback;
 
         stats::initTableCount(_db_name + "." + _tbl_name);
     }
 
-    void setXidCallback(xid_callback_t _callback) {
+    void setXidCallback(xid_callback_t _callback)
+    {
         m_xid_callback = _callback;
     }
 
