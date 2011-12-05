@@ -349,12 +349,7 @@ unsigned char* unpack_row(boost::shared_ptr<slave::Table> table,
 
             ptr = (unsigned char*)field->unpack((const char*)ptr);
 
-            // HACK!!
-
-            if (!field->is_bad) {
-
-                _row[field->getFieldName()] = std::make_pair(field->field_type, field->field_data);
-            }
+            _row[field->getFieldName()] = std::make_pair(field->field_type, field->field_data);
         }
 
         null_mask <<= 1;

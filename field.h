@@ -32,9 +32,8 @@
 namespace slave
 {
 
-
-class Field {
-
+class Field
+{
 public:
 
     unsigned int field_length;
@@ -48,8 +47,7 @@ public:
 
     Field(const std::string& field_name_arg, const std::string& type) :
         field_type(type),
-        field_name(field_name_arg),
-        is_bad(false)
+        field_name(field_name_arg)
         {}
 
     virtual ~Field() {}
@@ -61,26 +59,7 @@ public:
     const std::string getFieldName() {
         return field_name;
     }
-
-
-protected:
-
-    //const std::string table_name;
-
-public:
-    // HACK!
-    // Борьба с багой row-level репликации mysql.
-    bool is_bad;
-
 };
-
-
-
-/*
- *
- */
-
-
 
 class Field_num: public Field {
 public:
