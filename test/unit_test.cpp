@@ -209,6 +209,7 @@ namespace
     {
         MYSQL_TINYINT,
         MYSQL_INT,
+        MYSQL_BIGINT,
         MYSQL_CHAR,
         MYSQL_VARCHAR,
         MYSQL_TINYTEXT,
@@ -225,6 +226,14 @@ namespace
         static const std::string name;
     };
     const std::string MYSQL_type_traits<MYSQL_INT>::name = "INT";
+
+    template <>
+    struct MYSQL_type_traits<MYSQL_BIGINT>
+    {
+        typedef unsigned long long slave_type;
+        static const std::string name;
+    };
+    const std::string MYSQL_type_traits<MYSQL_BIGINT>::name = "BIGINT";
 
     template <>
     struct MYSQL_type_traits<MYSQL_CHAR>
@@ -316,6 +325,7 @@ namespace
 
     typedef boost::mpl::list<
         boost::mpl::int_<MYSQL_INT>,
+        boost::mpl::int_<MYSQL_BIGINT>,
         boost::mpl::int_<MYSQL_CHAR>,
         boost::mpl::int_<MYSQL_VARCHAR>,
         boost::mpl::int_<MYSQL_TINYTEXT>,
