@@ -30,10 +30,10 @@ namespace slave {
 
 
 typedef boost::shared_ptr<Table> PtrTable;
-	
+
 class RelayLogInfo {
 
-public:	
+public:
 
     typedef std::map<unsigned long, std::pair<std::string, std::string> > id_to_name_t;
     id_to_name_t m_map_table_name;
@@ -49,36 +49,36 @@ public:
 
 
     void setTableName(unsigned long table_id, const std::string& table_name, const std::string& db_name) {
-	m_map_table_name[table_id] = std::make_pair(db_name, table_name);
+        m_map_table_name[table_id] = std::make_pair(db_name, table_name);
     }
-	
+
     const std::pair<std::string,std::string> getTableNameById(int table_id) {
 
-	id_to_name_t::const_iterator p = m_map_table_name.find(table_id);
-	
-	if (p != m_map_table_name.end()) {
+        id_to_name_t::const_iterator p = m_map_table_name.find(table_id);
+
+        if (p != m_map_table_name.end()) {
             return p->second;
-	} else {
+        } else {
             return std::make_pair(std::string(), std::string());
-	}
+        }
     }
-	 
+
     boost::shared_ptr<Table> getTable(const std::pair<std::string, std::string>& key) {
         name_to_table_t::iterator p = m_table_map.find(key);
-	
-	if (p != m_table_map.end()) {
+
+        if (p != m_table_map.end()) {
             return p->second;
 
-	} else {
+        } else {
             return boost::shared_ptr<Table>();
         }
     }
-	
+
     void setTable(const std::string& table_name, const std::string& db_name, PtrTable table) {
 
-	m_table_map[std::make_pair(db_name, table_name)] = table;
+        m_table_map[std::make_pair(db_name, table_name)] = table;
     }
- 
+
 };
 }
-#endif 
+#endif

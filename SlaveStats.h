@@ -37,8 +37,8 @@ namespace stats {
 
 class SlaveStats {
 public:
-			
-    std::string connection_host;	
+
+    std::string connection_host;
     std::string master_log_name;
     unsigned long master_log_pos;
     unsigned int reconnect_count;
@@ -51,7 +51,7 @@ public:
     std::map<std::string,size_t> table_counts;
 
     std::string master_info_file;
-	
+
     SlaveStats() :
         master_log_pos(0),
         reconnect_count(0),
@@ -66,7 +66,7 @@ public:
 
         std::ofstream f(master_info_file.c_str(), std::ios::out | std::ios::trunc);
 
-        if (!f) 
+        if (!f)
             throw std::runtime_error("slave::writeMasterInfoFile(): Could not open file: " + master_info_file);
 
         f << master_log_pos << '\n' << master_log_name << '\n';
@@ -99,9 +99,9 @@ public:
 
 };
 
-/// 
+///
 
-inline SlaveStats& stats() { 
+inline SlaveStats& stats() {
     static SlaveStats _stats;
     return _stats;
 }
@@ -120,9 +120,9 @@ inline void setMasterLogPos(unsigned int p) { stats().master_log_pos = p; }
 
 inline void setReconnectCount() { stats().reconnect_count++; }
 
-inline void setLastEventTime(time_t d) { 
-    stats().last_event_time = d; 
-    stats().last_update = ::time(NULL); 
+inline void setLastEventTime(time_t d) {
+    stats().last_event_time = d;
+    stats().last_update = ::time(NULL);
 }
 
 inline void setStateProcessing(bool p) { stats().state_processing = p; }
@@ -140,4 +140,4 @@ inline void incTableCount(const std::string& t) { stats().table_counts[t]++; }
 }
 
 
-#endif 
+#endif

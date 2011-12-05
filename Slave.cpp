@@ -99,7 +99,7 @@ void Slave::createTable(RelayLogInfo& rli,
     LOG_TRACE(log, "enter: createTable " << db_name << " " << tbl_name);
 
     nanomysql::Connection::result_t res;
-    
+
     conn.query("SHOW FULL COLUMNS FROM " + tbl_name + " IN " + db_name);
     conn.store(res);
 
@@ -360,7 +360,7 @@ connected:
 
         stats::setMasterInfoFile(m_master_info.master_info_file);
 
-        stats::readMasterInfoFile(m_master_info.master_log_name, 
+        stats::readMasterInfoFile(m_master_info.master_log_name,
                                   m_master_info.master_log_pos);
     }
 
@@ -460,7 +460,7 @@ connected:
             slave::Basic_event_info event;
 
             if (!slave::read_log_event((const char*) mysql.net.read_pos + 1,
-                                       len - 1, 
+                                       len - 1,
                                        event)) {
 
                 LOG_TRACE(log, "Skipping unknown event.");
@@ -522,20 +522,20 @@ connected:
 
                 stats::setMasterLogPos(m_master_info.master_log_pos);
                 stats::setMasterLogName(rei.new_log_ident);
-    
+
                 m_master_info.master_log_name = rei.new_log_ident;
                 m_master_info.master_log_pos = rei.pos; //всегда равно 4
 
                 LOG_TRACE(log, "ROTATE_EVENT processed OK.");
             }
 
-            
+
             if (process_event(event, m_rli, m_master_info.master_log_pos)) {
 
                 LOG_TRACE(log, "Error in processing event.");
             }
 
-            
+
 
         } catch (const std::exception& _ex ) {
 
@@ -576,7 +576,7 @@ std::map<std::string,std::string> Slave::getRowType(const std::string& db_name,
             LOG_ERROR(log, "WARNING: Broken SHOW TABLE STATUS FROM " << db_name);
             continue;
         }
-        
+
         //row[0] - содержит имя таблицы
         //row[3] - содержит row_format
 
@@ -697,7 +697,7 @@ void Slave::check_master_version() {
                 break;
             }
 
-            if (*e == '\0' || e == v) 
+            if (*e == '\0' || e == v)
                 break;
 
             v = e+1;
@@ -758,7 +758,7 @@ static bool checkAlterQuery(const std::string& str)
     //RegularExpression regexp("^\\s*ALTER\\s+TABLE)", RegularExpression::RE_CASELESS);
 
     enum {
-        SP0, _A0, _L0, _T0, _E0, _R, SP1, _T1, _A1, _B, _L1, _E1 
+        SP0, _A0, _L0, _T0, _E0, _R, SP1, _T1, _A1, _B, _L1, _E1
     } state = SP0;
 
 
@@ -785,7 +785,7 @@ static bool checkAlterQuery(const std::string& str)
             state = SP1;
 
         } else if (state == SP1 && (*i == ' ' || *i == '\t' || *i == '\r' || *i == '\n')) {
-            
+
         } else if (state == SP1 && (*i == 't' || *i == 'T')) {
             state = _T1;
 
@@ -873,7 +873,7 @@ int Slave::process_event(const slave::Basic_event_info& bei, RelayLogInfo &m_rli
 
         break;
     }
-   
+
     default:
         break;
     }
@@ -954,7 +954,7 @@ void Slave::generateSlaveId()
         //row[0] - содержит имя server_id
 
         std::map<std::string,nanomysql::Connection::field>::const_iterator z = i->find("Server_id");
-        
+
         if (z == i->end())
             throw std::runtime_error("Slave::create_table(): SHOW SLAVE HOSTS query did not return 'Server_id'");
 
@@ -998,14 +998,14 @@ std::pair<std::string,unsigned int> Slave::getLastBinlog()
     if (res.size() == 1 && res[0].size() == 4) {
 
         std::map<std::string,nanomysql::Connection::field>::const_iterator z = res[0].find("File");
-        
+
         if (z == res[0].end())
             throw std::runtime_error("Slave::create_table(): SHOW SLAVE HOSTS query did not return 'File'");
 
         std::string file = z->second.data;
 
         z = res[0].find("Position");
-        
+
         if (z == res[0].end())
             throw std::runtime_error("Slave::create_table(): SHOW SLAVE HOSTS query did not return 'Position'");
 

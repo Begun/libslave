@@ -28,7 +28,7 @@ private:
         msg += ": ";
         msg += ::mysql_error(m_conn);
         msg += " : ";
-        
+
         char n[32];
         ::snprintf(n, 31, "%d", ::mysql_errno(m_conn));
         msg += n;
@@ -54,7 +54,7 @@ public:
             throw std::runtime_error("Could not mysql_init()");
 
         if (::mysql_real_connect(m_conn, host.c_str(), user.c_str(), password.c_str(), db.c_str(), port, NULL, 0) == NULL) {
-            throw_error("Could not mysql_real_connect()"); 
+            throw_error("Could not mysql_real_connect()");
         }
     }
 
@@ -104,18 +104,18 @@ public:
         }
 
         size_t num_fields = ::mysql_num_fields(re.s);
-        
+
         std::map<std::string,field> fields;
         std::vector<std::map<std::string,field>::iterator> fields_n;
 
         while (1) {
             MYSQL_FIELD* ff = ::mysql_fetch_field(re.s);
-                
+
             if (!ff) break;
 
             fields_n.push_back(
-                fields.insert(fields.end(), 
-                              std::make_pair(ff->name, 
+                fields.insert(fields.end(),
+                              std::make_pair(ff->name,
                                              field(ff->name, ff->type))));
         }
 

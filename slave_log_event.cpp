@@ -41,7 +41,7 @@ namespace slave {
 //---------------------------------------------------------------------------------------
 
 void Basic_event_info::parse(const char* _buf, unsigned int _event_len) {
-    
+
     buf = _buf;
     event_len = _event_len;
 
@@ -83,7 +83,7 @@ Query_event_info::Query_event_info(const char* buf, unsigned int event_len) {
 
     size_t data_len = event_len - (LOG_EVENT_HEADER_LEN + QUERY_HEADER_LEN) - status_vars_len;
 
-    query.assign(buf + LOG_EVENT_HEADER_LEN + QUERY_HEADER_LEN + status_vars_len + db_len + 1, 
+    query.assign(buf + LOG_EVENT_HEADER_LEN + QUERY_HEADER_LEN + status_vars_len + db_len + 1,
                  data_len - db_len - 1);
 }
 
@@ -118,13 +118,13 @@ Row_event_info::Row_event_info(const char* buf, unsigned int event_len, bool do_
     has_after_image = do_update;
 
     m_table_id = uint6korr(buf + LOG_EVENT_HEADER_LEN + RW_MAPID_OFFSET);
-    
+
     unsigned char* start = (unsigned char*)(buf + LOG_EVENT_HEADER_LEN + ROWS_HEADER_LEN);
 
     m_width = net_field_length(&start);
 
     m_cols.assign(start, start + ((m_width + 7) / 8));
-    
+
     start += m_cols.size();
 
     if (do_update) {
@@ -144,7 +144,7 @@ inline void check_format_description_postlen(unsigned char* b, slave::Log_event_
 
     if (b[(int)type - 1] != len) {
 
-        LOG_ERROR(log, "Invalid Format_description event: event type len " << (int)type 
+        LOG_ERROR(log, "Invalid Format_description event: event type len " << (int)type
                   << ": " << b[(int)type - 1] << " != " << len);
 
         ::abort();
@@ -287,17 +287,17 @@ size_t n_set_bits(const std::vector<unsigned char>& b, unsigned int count) {
 
 unsigned char* unpack_row(boost::shared_ptr<slave::Table> table,
                           slave::Row& _row,
-                          unsigned int colcnt, 
-                          unsigned char* row, 
-                          const std::vector<unsigned char>& cols, 
-                          const std::vector<unsigned char>& cols_ai) 
+                          unsigned int colcnt,
+                          unsigned char* row,
+                          const std::vector<unsigned char>& cols,
+                          const std::vector<unsigned char>& cols_ai)
 {
 
     LOG_TRACE(log, "Unpacking row: " << table->fields.size() << "," << colcnt << "," << cols.size()
               << "," << cols_ai.size());
 
     if (colcnt != table->fields.size()) {
-        LOG_ERROR(log, "Field count mismatch in unpacking row for " 
+        LOG_ERROR(log, "Field count mismatch in unpacking row for "
                   << table->full_name << ": " << colcnt << " != " << table->fields.size());
         return NULL;
     }
@@ -309,7 +309,7 @@ unsigned char* unpack_row(boost::shared_ptr<slave::Table> table,
 
     unsigned char* ptr = row + master_null_byte_count;
 
-    // 
+    //
     unsigned char* null_ptr = row;
     unsigned int null_mask = 1U;
     unsigned char null_bits = *null_ptr++;
@@ -344,7 +344,7 @@ unsigned char* unpack_row(boost::shared_ptr<slave::Table> table,
             LOG_TRACE(log, "set_null found");
 
         } else {
-            
+
             // We only unpack the field if it was non-null
 
             ptr = (unsigned char*)field->unpack((const char*)ptr);
@@ -367,9 +367,9 @@ unsigned char* unpack_row(boost::shared_ptr<slave::Table> table,
 }
 
 
-unsigned char* do_writedelete_row(boost::shared_ptr<slave::Table> table, 
+unsigned char* do_writedelete_row(boost::shared_ptr<slave::Table> table,
                                   const Basic_event_info& bei,
-                                  const Row_event_info& roi, 
+                                  const Row_event_info& roi,
                                   unsigned char* row_start) {
 
 
@@ -392,9 +392,9 @@ unsigned char* do_writedelete_row(boost::shared_ptr<slave::Table> table,
     return t;
 }
 
-unsigned char* do_update_row(boost::shared_ptr<slave::Table> table, 
+unsigned char* do_update_row(boost::shared_ptr<slave::Table> table,
                              const Basic_event_info& bei,
-                             const Row_event_info& roi, 
+                             const Row_event_info& roi,
                              unsigned char* row_start) {
 
     slave::RecordSet _record_set;
@@ -439,7 +439,7 @@ void apply_row_event(slave::RelayLogInfo& rli, const Basic_event_info& bei, cons
 
         unsigned char* row_start = roi.m_rows_buf;
 
-        while (row_start < roi.m_rows_end && 
+        while (row_start < roi.m_rows_end &&
                row_start != NULL) {
 
             if (bei.type == UPDATE_ROWS_EVENT) {

@@ -33,16 +33,16 @@ typedef std::map<std::string, std::pair<std::string, boost::any> > Row;
 struct RecordSet
 {
     Row m_row, m_old_row;
-	
+
     std::string tbl_name;
     std::string db_name;
-	
+
     time_t when;
-	
+
     enum TypeEvent { Update, Delete, Write, PreInit, PostInit };
-	
+
     TypeEvent type_event;
-	 
+
     // ID корневого мастера, с которого была отправлена эта запись
     unsigned int master_id;
     RecordSet(): master_id(0) {}
@@ -50,4 +50,4 @@ struct RecordSet
 
 }
 
-#endif 
+#endif

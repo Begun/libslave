@@ -13,9 +13,9 @@
 */
 
 /*
- * 
+ *
  * Гарантируется работа с MySQL5.1.23
- * 
+ *
  */
 
 #ifndef __SLAVE_SLAVE_H_
@@ -63,7 +63,7 @@ struct MasterInfo {
     std::string master_log_name;
     unsigned long master_log_pos;
     unsigned int connect_retry;
-	
+
     std::string master_info_file;
 
     MasterInfo() : port(3306), master_log_pos(0), connect_retry(10) {}
@@ -84,14 +84,14 @@ private:
 
     MYSQL mysql;
 
-    int m_server_id;	
+    int m_server_id;
 
     MasterInfo m_master_info;
 
     table_order_t m_table_order;
     callbacks_t m_callbacks;
 
-    typedef boost::function<void (unsigned int)> xid_callback_t; 
+    typedef boost::function<void (unsigned int)> xid_callback_t;
     xid_callback_t m_xid_callback;
 
     RelayLogInfo m_rli;
@@ -100,7 +100,7 @@ private:
     void createDatabaseStructure_(table_order_t& tabs, RelayLogInfo& rli) const;
 
 public:
-	
+
     Slave() {}
 
     Slave(MasterInfo& _master_info) : m_master_info(_master_info) {}
@@ -116,9 +116,9 @@ public:
     void setXidCallback(xid_callback_t _callback) {
         m_xid_callback = _callback;
     }
-		
+
     void get_remote_binlog( const boost::function< bool() >& _interruptFlag = &Slave::falseFunction );
-	
+
     void createDatabaseStructure() {
 
         m_rli.clear();
@@ -136,10 +136,10 @@ public:
 
     table_order_t getTableOrder() const {
         return m_table_order;
-    }	
+    }
 
     void init();
-	
+
     int getServerOid() const { return m_server_id; }
 
     // Closes connection, opened in get_remotee_binlog. Should be called if your have get_remote_binlog
@@ -148,41 +148,41 @@ public:
     void close_connection();
 
 protected:
-	
-		
+
+
     int connect_to_master(int reconnect = 0);
-		
+
     int safe_reconnect();
-		
+
     int safe_connect();
-		
+
     void check_master_version();
 
     void check_master_binlog_format();
-		
+
     int process_event(const slave::Basic_event_info& bei, RelayLogInfo &rli, unsigned long long pos);
-		
+
     void request_dump(const std::string& logname, unsigned long start_position, MYSQL* mysql);
-		
+
     ulong read_event(MYSQL* mysql);
-		
-    std::map<std::string,std::string> getRowType(const std::string& db_name, 
+
+    std::map<std::string,std::string> getRowType(const std::string& db_name,
                                                  const std::set<std::string>& tbl_names) const;
 
     std::pair<std::string,unsigned int> getLastBinlog();
-		
+
     void createTable(RelayLogInfo& rli,
                      const std::string& db_name, const std::string& tbl_name,
                      const collate_map_t& collate_map, nanomysql::Connection& conn) const;
-		
+
     void register_slave_on_master(const bool m_register, MYSQL* mysql);
-		
+
     void generateSlaveId();
-	
+
 };
 
 
 
 }
 
-#endif 
+#endif

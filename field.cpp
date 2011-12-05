@@ -48,7 +48,7 @@ const char* Field_tiny::unpack(const char* from) {
     field_data = tmp;
 
     LOG_TRACE(log, "  tiny: " << (int)(tmp) << " // " << pack_length());
-    
+
     return from + pack_length();
 }
 
@@ -200,7 +200,7 @@ const char* Field_time::unpack(const char* from) {
 Field_enum::Field_enum(const std::string& field_name_arg, const std::string& type):
     Field_str(field_name_arg, type) {
 
-    //для поля типа enum нужно подсчитать количество перечисляемых значений 
+    //для поля типа enum нужно подсчитать количество перечисляемых значений
     // если количество перечислений меньше 255, то этот тип занимает 1 байт
     count_elements = 1;
     for (std::string::const_iterator i = type.begin(); i != type.end(); ++i) {
@@ -226,7 +226,7 @@ const char* Field_enum::unpack(const char* from) {
     field_data = tmp;
 
     LOG_TRACE(log, "  enum: " << tmp << " // " << pack_length());
-		
+
     return from + pack_length();
 }
 
@@ -245,7 +245,7 @@ Field_set::Field_set(const std::string& field_name_arg, const std::string& type)
 }
 
 const char* Field_set::unpack(const char* from) {
-	
+
     //для удобства использования в mysql++ приводим к типу unsigned long long
     ulonglong tmp;
 
@@ -267,7 +267,7 @@ const char* Field_set::unpack(const char* from) {
         break;
     default:
         tmp = uint8korr(from);
-        break;				
+        break;
     }
 
     field_data = tmp;
@@ -283,11 +283,11 @@ Field_longstr::Field_longstr(const std::string& field_name_arg, const std::strin
 const char* Field_longstr::unpack(const char* from) {
 
     if (field_length > 255) {
-    	length_row = (*((unsigned short *)(from)));
-    	from += 2;
+        length_row = (*((unsigned short *)(from)));
+        from += 2;
 
     } else {
-    	length_row = (unsigned int) (unsigned char) *from++;
+        length_row = (unsigned int) (unsigned char) *from++;
     }
 
     std::string tmp(from, length_row);
@@ -311,7 +311,7 @@ Field_string::Field_string(const std::string& field_name_arg, const std::string&
 
     //получаем размер строки
     std::string str_count(type, b+1, e-b-1);
-        
+
     field_length = ::atoi(str_count.c_str());
 }
 
@@ -330,14 +330,14 @@ Field_varstring::Field_varstring(const std::string& field_name_arg, const std::s
     }
 
     //получаем размер строки
-    std::string str_count(type, b+1, e-b-1); 
+    std::string str_count(type, b+1, e-b-1);
     int symbols = atoi(str_count.c_str());
     int bytes = symbols * collate.maxlen;
 
     //количество байт, занимаемых в памяти
 
     length_bytes = ((bytes < 256) ? 1 : 2);
-	
+
     //длина символов
     field_length = symbols;
 }
@@ -345,13 +345,13 @@ Field_varstring::Field_varstring(const std::string& field_name_arg, const std::s
 const char* Field_varstring::unpack(const char* from) {
 
     if (length_bytes == 1) {
-    	//length_row = (unsigned int) (unsigned char) (*to = *from++);
-    	length_row = (unsigned int) (unsigned char) (*from++);
+        //length_row = (unsigned int) (unsigned char) (*to = *from++);
+        length_row = (unsigned int) (unsigned char) (*from++);
 
     } else {
         length_row = uint2korr(from);
-    	from++;
-    	from++;
+        from++;
+        from++;
     }
 
     std::string tmp(from, length_row);
@@ -377,9 +377,9 @@ Field_longblob::Field_longblob(const std::string& field_name_arg, const std::str
 
 const char* Field_blob::unpack(const char* from) {
 
-    length_row = get_length(from); 
-    from += packlength; 
-	
+    length_row = get_length(from);
+    from += packlength;
+
     std::string tmp(from, length_row);
     field_data = tmp;
 
@@ -397,7 +397,7 @@ unsigned int Field_blob::get_length(const char *pos) {
         return (unsigned int) (unsigned char) pos[0];
     case 2:
     {
-    			
+
         unsigned short tmp = 0;
 
         /*
@@ -410,7 +410,7 @@ unsigned int Field_blob::get_length(const char *pos) {
         tmp = sint2korr(pos);
 
         return (unsigned int) tmp;
-    			
+
     }
     case 3:
         return (unsigned int) uint3korr(pos);
@@ -430,7 +430,7 @@ unsigned int Field_blob::get_length(const char *pos) {
     }
 
     }
-    
+
     throw std::runtime_error("Oops, wrong packlength in Field_blob::get_length(): wanted 1, 2, 3 or 4.");
 }
 
