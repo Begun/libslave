@@ -30,6 +30,9 @@ std::string print(const std::string& type, const boost::any& v) {
         else if (v.type() == typeid(unsigned long long))
             s << boost::any_cast<unsigned long long>(v);
 
+        else if (v.type() == typeid(void))
+            s << "void";
+
         else
             s << boost::any_cast<long>(v);
 
