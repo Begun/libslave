@@ -77,9 +77,6 @@ public:
     Field_longstr(const std::string& field_name_arg, const std::string& type);
 
     const char* unpack(const char* from);
-
-protected:
-    unsigned int length_row;
 };
 
 

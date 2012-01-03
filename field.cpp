@@ -279,6 +279,7 @@ Field_longstr::Field_longstr(const std::string& field_name_arg, const std::strin
 
 const char* Field_longstr::unpack(const char* from) {
 
+    unsigned length_row;
     if (field_length > 255) {
         length_row = (*((unsigned short *)(from)));
         from += 2;
@@ -322,6 +323,7 @@ Field_varstring::Field_varstring(const std::string& field_name_arg, const std::s
 
 const char* Field_varstring::unpack(const char* from) {
 
+    unsigned length_row;
     if (length_bytes == 1) {
         //length_row = (unsigned int) (unsigned char) (*to = *from++);
         length_row = (unsigned int) (unsigned char) (*from++);
@@ -355,7 +357,7 @@ Field_longblob::Field_longblob(const std::string& field_name_arg, const std::str
 
 const char* Field_blob::unpack(const char* from) {
 
-    length_row = get_length(from);
+    const unsigned length_row = get_length(from);
     from += packlength;
 
     std::string tmp(from, length_row);
