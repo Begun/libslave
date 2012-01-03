@@ -355,7 +355,7 @@ void Slave::get_remote_binlog( const boost::function< bool() >& _interruptFlag)
 
     //connect_to_master(false, &mysql);
 
-    register_slave_on_master(true, &mysql);
+    register_slave_on_master(&mysql);
 
     const bool do_master_info_file = (m_master_info.master_info_file.size() > 0);
 
@@ -557,12 +557,7 @@ connected:
 
     LOG_WARNING(log, "Binlog monitor was stopped. Binlog events are not listened.");
 
-    try {
-        register_slave_on_master(false, &mysql);
-
-    } catch (const std::exception & ex) {
-        LOG_ERROR(log, "Slave::get_remote_binlog: error closing connection to MYSQL. Exception catched: " << ex.what());
-    }
+    deregister_slave_on_master(&mysql);
 }
 
 std::map<std::string,std::string> Slave::getRowType(const std::string& db_name,
@@ -613,7 +608,7 @@ std::map<std::string,std::string> Slave::getRowType(const std::string& db_name,
     return ret;
 }
 
-void Slave::register_slave_on_master(bool m_register, MYSQL* mysql)
+void Slave::register_slave_on_master(MYSQL* mysql)
 {
     uchar buf[1024], *pos= buf;
 
@@ -630,7 +625,7 @@ void Slave::register_slave_on_master(bool m_register, MYSQL* mysql)
     report_user_len= strlen(report_user);
     report_password_len= strlen(report_password);
 
-    LOG_DEBUG(log, "Register slave on master: m_server_id = " << m_server_id);
+    LOG_DEBUG(log, "Registering slave on master: m_server_id = " << m_server_id << "...");
 
     int4store(pos, m_server_id);
     pos+= 4;
@@ -646,23 +641,21 @@ void Slave::register_slave_on_master(bool m_register, MYSQL* mysql)
     int4store(pos, 0);
     pos+= 4;
 
-    //LOG_INFO(log, "Slave::register_slave_on_master --->, m_register = " << m_register);
+    if (simple_command(mysql, COM_REGISTER_SLAVE, buf, (size_t) (pos-buf), 0)) {
 
-    if (m_register) {
-
-        if (simple_command(mysql, COM_REGISTER_SLAVE, buf, (size_t) (pos-buf), 0)) {
-
-            LOG_ERROR(log, "Unable to register slave.");
-            throw std::runtime_error("Slave::register_slave_on_master(): Error registring on slave: " +
-                                     std::string(mysql_error(mysql)));
-        }
-
-        LOG_TRACE(log, "Success registering slave on master");
-
-    } else {
-
-        simple_command(mysql, COM_QUIT, buf, (size_t) (pos-buf), 0);
+        LOG_ERROR(log, "Unable to register slave.");
+        throw std::runtime_error("Slave::register_slave_on_master(): Error registring on slave: " +
+                                 std::string(mysql_error(mysql)));
     }
+
+    LOG_TRACE(log, "Success registering slave on master");
+}
+
+void Slave::deregister_slave_on_master(MYSQL* mysql)
+{
+    LOG_DEBUG(log, "Deregistering slave on master: m_server_id = " << m_server_id << "...");
+    // Last '1' means 'no checking', otherwise command can hung
+    simple_command(mysql, COM_QUIT, 0, 0, 1);
 }
 
 void Slave::check_master_version()
