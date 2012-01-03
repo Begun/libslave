@@ -128,7 +128,7 @@ public:
 
     void init();
 
-    int getServerOid() const { return m_server_id; }
+    int serverId() const { return m_server_id; }
 
     // Closes connection, opened in get_remotee_binlog. Should be called if your have get_remote_binlog
     // blocked on reading data from mysql server in the separate thread and you want to stop this thread.
