@@ -89,7 +89,7 @@ public:
         const size_t num_fields = ::mysql_num_fields(re.s);
 
         fields_t fields;
-        std::vector<std::map<std::string,field>::iterator> fields_n;
+        std::vector<fields_t::iterator> fields_n;
 
         while (1) {
             MYSQL_FIELD* ff = ::mysql_fetch_field(re.s);
@@ -123,7 +123,7 @@ public:
         }
     }
 
-    typedef std::vector<std::map<std::string, field> > result_t;
+    typedef std::vector<fields_t> result_t;
 
     void store(result_t& out) {
 #ifndef __GXX_EXPERIMENTAL_CXX0X__
