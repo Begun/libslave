@@ -35,9 +35,6 @@ namespace slave
 class Field
 {
 public:
-
-    unsigned int field_length;
-
     const std::string field_type;
     const std::string field_name;
 
@@ -52,9 +49,7 @@ public:
 
     virtual ~Field() {}
 
-    virtual unsigned int pack_length() const {
-        return (unsigned int) field_length;
-    }
+    virtual unsigned int pack_length() const = 0;
 
     const std::string getFieldName() {
         return field_name;
@@ -73,10 +68,17 @@ public:
 };
 
 class Field_longstr: public Field_str {
+
+protected:
+    unsigned int field_length;
+
 public:
     Field_longstr(const std::string& field_name_arg, const std::string& type);
-
     const char* unpack(const char* from);
+
+    unsigned int pack_length() const {
+        return field_length;
+    }
 };
 
 
