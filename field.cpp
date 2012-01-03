@@ -395,5 +395,34 @@ unsigned int Field_blob::get_length(const char *pos) {
     throw std::runtime_error("Oops, wrong packlength in Field_blob::get_length(): wanted 1, 2, 3 or 4.");
 }
 
+Field_decimal::Field_decimal(const std::string& field_name_arg, const std::string& type):
+    Field_longstr(field_name_arg, type)
+{
+    // Получаем размеры поля: decimal(M,D)
+    // M - общее количество цифр, M-D - после запятой
+
+    const std::string::size_type b = type.find('(', 0);
+
+    if (b == std::string::npos) {
+        throw std::runtime_error("Field_string: Incorrect field DECIMAL");
+    }
+
+    int m, d;
+    if (2 != sscanf(type.c_str() + b, "(%d,%d)", &m, &d) || m <= 0 || m < d) {
+        throw std::runtime_error("Field_string: Incorrect field DECIMAL");
+    }
+
+    const int intg = m - d;
+    const int frac = d;
+
+    static const int dig2bytes[] = {0, 1, 1, 2, 2, 3, 3, 4, 4, 4};
+    field_length = (intg / 9) * 4 + dig2bytes[intg % 9] + (frac / 9) * 4 + dig2bytes[frac % 9];
+}
+
+const char* Field_decimal::unpack(const char *from)
+{
+    return from + pack_length();
+}
+
 }
 

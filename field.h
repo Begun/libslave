@@ -251,6 +251,12 @@ public:
     const char* unpack(const char* from);
 };
 
+class Field_decimal : public Field_longstr {
+public:
+    Field_decimal(const std::string& field_name_arg, const std::string& type);
+    const char* unpack(const char *from);
+};
+
 }
 
 #endif
