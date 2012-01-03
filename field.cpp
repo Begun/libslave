@@ -277,25 +277,6 @@ const char* Field_set::unpack(const char* from) {
 Field_longstr::Field_longstr(const std::string& field_name_arg, const std::string& type):
     Field_str(field_name_arg, type)  {}
 
-const char* Field_longstr::unpack(const char* from) {
-
-    unsigned length_row;
-    if (field_length > 255) {
-        length_row = (*((unsigned short *)(from)));
-        from += 2;
-
-    } else {
-        length_row = (unsigned int) (unsigned char) *from++;
-    }
-
-    std::string tmp(from, length_row);
-    field_data = tmp;
-
-    LOG_TRACE(log, "  longstr: '" << tmp << "' // " << field_length << " " << length_row);
-
-    return from + length_row;
-}
-
 Field_varstring::Field_varstring(const std::string& field_name_arg, const std::string& type, const collate_info& collate):
     Field_longstr(field_name_arg, type) {
 
