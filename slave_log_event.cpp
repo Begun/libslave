@@ -156,6 +156,14 @@ inline void check_format_description(const char* buf, unsigned int event_len) {
 
     buf += LOG_EVENT_MINIMAL_HEADER_LEN;
 
+    uint16_t binlog_version;
+    memcpy(&binlog_version, buf + ST_BINLOG_VER_OFFSET, ST_BINLOG_VER_LEN);
+    if (4 != binlog_version)
+    {
+        LOG_ERROR(log, "Invalid binlog version: " << binlog_version << " != 4");
+        ::abort();
+    }
+
     size_t common_header_len = (unsigned char)(buf[ST_COMMON_HEADER_LEN_OFFSET]);
 
     if (common_header_len != LOG_EVENT_HEADER_LEN) {
