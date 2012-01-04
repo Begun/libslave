@@ -28,7 +28,8 @@ For building the library, you will need:
 
  * The headers of the boost libraries. (http://www.boost.org)
    At the minimum, you will need at least the shared_ptr.hpp, function.hpp,
-   any.hpp and bind.hpp.
+   any.hpp and bind.hpp. If boost_unit_test_framework and boost_thread will
+   be found, tests will be built.
 
  * You (likely) will need to review and edit the contents of Logging.h
    and SlaveStats.h
@@ -38,28 +39,28 @@ For building the library, you will need:
 
 Usage requirements:
 
- * Requires Mysql 5.1.23 or above. Tested only with some of the 5.1
+ * Requires Mysql 5.1.23 or above. Tested only with some of the 5.1 and 5.5
    versions of mysql servers.
 
 Compiling:
 
-Edit Makefile to set the path of your boost includes and your build
-options; type 'make' to build a static and a shared version of the
-library.
+Create directory "build" in source tree, step into it and run "cmake ..".
+Then, if configure is complete, run "make".
 
 Review and edit Logging.h and SlaveStats.h to interface the library to
 your app's logging and monitoring subsystems.
 
-Note: The enclosed Makefile is intended only as a demonstration,
-not a complete build solution.
+You can type "make test" inside of "build" directory to run tests. You
+will need a working mysql server for it. Settings of mysql connection
+can be adjusted in test/data/mysql.conf. Type "ctest -V" if something
+went wrong and you need see test output.
 
+Using the library:
 
-Using the library: 
-
-Please see the examples in 'test/'. 
+Please see the examples in 'test/'.
 
 You can find the programmer's API documentation on our github wiki
-pages, see https://github.com/Begun/libslave.
+pages, see https://github.com/vozbu/libslave/wiki.
 
 
 CREDITS
