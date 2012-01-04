@@ -671,45 +671,17 @@ void Slave::check_master_version()
     conn.query("SELECT VERSION()");
     conn.store(res);
 
-    if (res.size() == 1 && res[0].size() == 1) {
-
+    if (res.size() == 1 && res[0].size() == 1)
+    {
         std::string tmp = res[0].begin()->second.data;
-
-        bool ok = true;
-
-        const char* v = tmp.data();
-
-        for (int i = 0; i < 3; ++i) {
-
-            char* e;
-
-            int z = ::strtoul(v, &e, 10);
-
-            /* Mysql version >= 5.1.23 */
-
-            if ((z >= 5 && i == 0) ||
-                (z >= 1 && i == 1) ||
-                (z >= 23 && i == 2)) {
-
-                //
-
-            }  else {
-                ok = false;
-                break;
-            }
-
-            if (*e == '\0' || e == v)
-                break;
-
-            v = e+1;
+        int major, minor, patch;
+        if (3 == sscanf(tmp.c_str(), "%d.%d.%d", &major, &minor, &patch))
+        {
+            const int version = major * 10000 + minor * 100 + patch;
+            static const int min_version = 50123;   // 5.1.23
+            if (version >= min_version)
+                return;
         }
-
-
-        /* */
-        if (ok) {
-            return;
-        }
-
         throw std::runtime_error("Slave::check_master_version(): got invalid version: " + tmp);
     }
 
