@@ -63,6 +63,8 @@ enum Log_event_type
 
   INCIDENT_EVENT = 26,
 
+  HEARTBEAT_LOG_EVENT= 27,
+
   ENUM_END_EVENT
 };
 
@@ -101,12 +103,6 @@ enum Log_event_type
 #define ST_COMMON_HEADER_LEN_OFFSET (ST_CREATED_OFFSET + 4)
 
 #define START_V3_HEADER_LEN     (2 + ST_SERVER_VER_LEN + 4)
-#define FORMAT_DESCRIPTION_HEADER_LEN (START_V3_HEADER_LEN + 1 + LOG_EVENT_TYPES)
-
-
-
-
-
 
 
 //-----------------------------------------------------------------------------------------

@@ -144,8 +144,8 @@ inline void check_format_description_postlen(unsigned char* b, slave::Log_event_
 
     if (b[(int)type - 1] != len) {
 
-        LOG_ERROR(log, "Invalid Format_description event: event type len " << (int)type
-                  << ": " << b[(int)type - 1] << " != " << len);
+        LOG_ERROR(log, "Invalid Format_description event: event type " << (int)type
+                  << " len: " << (int)b[(int)type - 1] << " != " << (int)len);
 
         ::abort();
     }
@@ -173,13 +173,15 @@ inline void check_format_description(const char* buf, unsigned int event_len) {
         ::abort();
     }
 
-    size_t number_of_event_types =
+    // Check that binlog contains different event types not more than we know
+    // If less - it's ok, backward compatibility
+    const size_t number_of_event_types =
         event_len - (LOG_EVENT_MINIMAL_HEADER_LEN + ST_COMMON_HEADER_LEN_OFFSET + 1);
 
-    if (number_of_event_types != LOG_EVENT_TYPES) {
-
+    if (number_of_event_types > LOG_EVENT_TYPES)
+    {
         LOG_ERROR(log, "Invalid Format_description event: number_of_event_types " << number_of_event_types
-                  << " != " << LOG_EVENT_TYPES);
+                  << " > " << LOG_EVENT_TYPES);
         ::abort();
     }
 
@@ -190,7 +192,7 @@ inline void check_format_description(const char* buf, unsigned int event_len) {
     check_format_description_postlen(event_lens, XID_EVENT, 0);
     check_format_description_postlen(event_lens, QUERY_EVENT, QUERY_HEADER_LEN);
     check_format_description_postlen(event_lens, ROTATE_EVENT, ROTATE_HEADER_LEN);
-    check_format_description_postlen(event_lens, FORMAT_DESCRIPTION_EVENT, FORMAT_DESCRIPTION_HEADER_LEN);
+    check_format_description_postlen(event_lens, FORMAT_DESCRIPTION_EVENT, START_V3_HEADER_LEN + 1 + number_of_event_types);
     check_format_description_postlen(event_lens, TABLE_MAP_EVENT, TABLE_MAP_HEADER_LEN);
     check_format_description_postlen(event_lens, WRITE_ROWS_EVENT, ROWS_HEADER_LEN);
     check_format_description_postlen(event_lens, UPDATE_ROWS_EVENT, ROWS_HEADER_LEN);
@@ -253,6 +255,7 @@ bool read_log_event(const char* buf, uint event_len, Basic_event_info& bei)
     case BEGIN_LOAD_QUERY_EVENT:
     case EXECUTE_LOAD_QUERY_EVENT:
     case INCIDENT_EVENT:
+    case HEARTBEAT_LOG_EVENT:
         return false;
         break;
 
