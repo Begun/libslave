@@ -198,12 +198,16 @@ namespace
         }
     };
 
-    BOOST_FIXTURE_TEST_SUITE(Slave, Fixture)
+    BOOST_AUTO_TEST_SUITE(SlaveConf)
 
     BOOST_AUTO_TEST_CASE(test_HelloWorld)
     {
         std::cout << "You probably should specify parameters to mysql in the file " << TestDataDir << "mysql.conf first" << std::endl;
     }
+
+    BOOST_AUTO_TEST_SUITE_END()
+
+    BOOST_FIXTURE_TEST_SUITE(Slave, Fixture)
 
     enum MYSQL_TYPE
     {
