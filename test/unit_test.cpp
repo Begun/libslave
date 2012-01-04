@@ -357,7 +357,7 @@ namespace
                     BOOST_FAIL("Malformed string '" << line << "' in the file '" << sDataFilename << "'");
                 const std::string sDropTableQuery = "DROP TABLE IF EXISTS test";
                 conn->query(sDropTableQuery);
-                const std::string sCreateTableQuery = "CREATE TABLE test (value " + tokens[1] + ")";
+                const std::string sCreateTableQuery = "CREATE TABLE test (value " + tokens[1] + ") DEFAULT CHARSET=utf8";
                 conn->query(sCreateTableQuery);
             }
             else if (tokens.front() == "data")
