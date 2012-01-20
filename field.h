@@ -252,6 +252,9 @@ public:
 };
 
 class Field_decimal : public Field_longstr {
+    double dec2double(const char*);
+    int intg;
+    int frac;
 public:
     Field_decimal(const std::string& field_name_arg, const std::string& type);
     const char* unpack(const char *from);

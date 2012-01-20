@@ -24,6 +24,7 @@
 
 #include <mysql/m_string.h>
 
+#include "dec_util.h"
 #include "field.h"
 
 #include "Logging.h"
@@ -396,10 +397,12 @@ unsigned int Field_blob::get_length(const char *pos) {
 }
 
 Field_decimal::Field_decimal(const std::string& field_name_arg, const std::string& type):
-    Field_longstr(field_name_arg, type)
+    Field_longstr(field_name_arg, type),
+    intg(0),
+    frac(0)
 {
     // Получаем размеры поля: decimal(M,D)
-    // M - общее количество цифр, M-D - после запятой
+    // M - общее количество цифр, M-D - до запятой
 
     const std::string::size_type b = type.find('(', 0);
 
@@ -412,8 +415,8 @@ Field_decimal::Field_decimal(const std::string& field_name_arg, const std::strin
         throw std::runtime_error("Field_string: Incorrect field DECIMAL");
     }
 
-    const int intg = m - d;
-    const int frac = d;
+    intg = m - d;
+    frac = d;
 
     static const int dig2bytes[] = {0, 1, 1, 2, 2, 3, 3, 4, 4, 4};
     field_length = (intg / 9) * 4 + dig2bytes[intg % 9] + (frac / 9) * 4 + dig2bytes[frac % 9];
@@ -421,8 +424,24 @@ Field_decimal::Field_decimal(const std::string& field_name_arg, const std::strin
 
 const char* Field_decimal::unpack(const char *from)
 {
+    double result = dec2double(from);
+    field_data = result;
     return from + pack_length();
 }
 
+double Field_decimal::dec2double(const char* from)
+{
+    decimal_t val;
+    val.len = intg + frac;
+    size_t bytes = val.len * sizeof(decimal_digit_t);
+    val.buf = (decimal_digit_t *)alloca(bytes);
+    memset(val.buf, 0, bytes);
+
+    dec_util::bin2dec(from, &val, intg+frac, frac);
+    double v = 0;
+    dec_util::dec2dbl(&val, &v);
+
+    return v;
 }
 
+} // namespace slave

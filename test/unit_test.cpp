@@ -10,6 +10,7 @@ using namespace boost::unit_test;
 #include <boost/mpl/int.hpp>
 #include <boost/mpl/list.hpp>
 #include <boost/thread.hpp>
+#include <cfloat>
 #include "Slave.h"
 #include "nanomysql.h"
 
@@ -217,7 +218,8 @@ namespace
         MYSQL_CHAR,
         MYSQL_VARCHAR,
         MYSQL_TINYTEXT,
-        MYSQL_TEXT
+        MYSQL_TEXT,
+        MYSQL_DECIMAL
     };
 
     template <MYSQL_TYPE T>
@@ -271,6 +273,25 @@ namespace
     };
     const std::string MYSQL_type_traits<MYSQL_TEXT>::name = "TEXT";
 
+    template <>
+    struct MYSQL_type_traits<MYSQL_DECIMAL>
+    {
+        typedef double slave_type;
+        static const std::string name;
+    };
+    const std::string MYSQL_type_traits<MYSQL_DECIMAL>::name = "DECIMAL";
+
+    template <typename T>
+    bool not_equal(const T& a, const T& b)
+    {
+        return a != b;
+    }
+
+    bool not_equal(double a, double b)
+    {
+        return fabs(a-b) > DBL_EPSILON * fmax(fabs(a),fabs(b));
+    }
+
     template <typename T>
     struct CheckEquality
     {
@@ -297,7 +318,8 @@ namespace
                 if (row.end() == it)
                     throw std::runtime_error("Can't find field 'value' in the row");
                 const T t = boost::any_cast<T>(it->second.second);
-                if (value != t)
+                //if (value != t)
+                if (not_equal(value,t))
                 {
                     std::ostringstream str;
                     str << "Value '" << value << "' is not equal to libslave value '" << t << "'";
@@ -333,7 +355,8 @@ namespace
         boost::mpl::int_<MYSQL_CHAR>,
         boost::mpl::int_<MYSQL_VARCHAR>,
         boost::mpl::int_<MYSQL_TINYTEXT>,
-        boost::mpl::int_<MYSQL_TEXT>
+        boost::mpl::int_<MYSQL_TEXT>,
+        boost::mpl::int_<MYSQL_DECIMAL>
     > mysql_one_field_types;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_OneField, T, mysql_one_field_types)
@@ -357,6 +380,15 @@ namespace
                 continue;
             if (tokens.front() == "define")
             {
+                if (tokens.size() > 2)
+                {
+                    std::string dec = tokens[1].substr(1, tokens[1].find('(', 0)-1);
+                    if ("DECIMAL" == dec)
+                    {
+                        tokens[1] += "," + tokens[2];
+                        tokens.pop_back();
+                    }
+                }
                 if (tokens.size() != 2)
                     BOOST_FAIL("Malformed string '" << line << "' in the file '" << sDataFilename << "'");
                 const std::string sDropTableQuery = "DROP TABLE IF EXISTS test";
