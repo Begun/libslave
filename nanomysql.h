@@ -54,10 +54,6 @@ class Connection {
         ~_mysql_res_wrap() { if (s != NULL) ::mysql_free_result(s); }
     };
 
-public:
-    Connection(const std::string& host, const std::string& user, const std::string& password,
-               const std::string& db = "", int port = 0) {
-
     void init_(const std::string& host, const std::string& user, const std::string& password,
                const std::string& db, int port)
     {
@@ -70,6 +66,7 @@ public:
             throw_error("Could not mysql_real_connect()");
         }
     }
+
 public:
 
     struct Attributes {
