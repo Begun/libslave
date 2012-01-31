@@ -14,7 +14,7 @@
 
 /*
  * 
- * Гарантируется работа с MySQL5.1.23
+ * Guaranteed to work with MySQL5.1.23
  * 
  */
 
@@ -54,21 +54,6 @@ namespace slave
 
 unsigned char *net_store_length_fast(unsigned char *pkg, unsigned int length);
 
-struct MasterInfo {
-
-    unsigned int port;
-    std::string host;
-    std::string user;
-    std::string password;
-    std::string master_log_name;
-    unsigned long master_log_pos;
-    unsigned int connect_retry;
-	
-    std::string master_info_file;
-
-    MasterInfo() : port(3306), master_log_pos(0), connect_retry(10) {}
-};
-
 
 
 class Slave
@@ -87,6 +72,7 @@ private:
     int m_server_id;	
 
     MasterInfo m_master_info;
+    ExtStateIface &ext_state;
 
     table_order_t m_table_order;
     callbacks_t m_callbacks;
@@ -101,16 +87,16 @@ private:
 
 public:
 	
-    Slave() {}
+    Slave(ExtStateIface &state) : ext_state(state) {}
 
-    Slave(MasterInfo& _master_info) : m_master_info(_master_info) {}
+    Slave(MasterInfo& _master_info, ExtStateIface &state) : m_master_info(_master_info), ext_state(state) {}
 
     void setCallback(const std::string& _db_name, const std::string& _tbl_name, callback _callback) {
 
         m_table_order.push_back(std::make_pair(_db_name, _tbl_name));
         m_callbacks[std::make_pair(_db_name, _tbl_name)] = _callback;
 
-        stats::initTableCount(_db_name + "." + _tbl_name);
+        ext_state.initTableCount(_db_name + "." + _tbl_name);
     }
 
     void setXidCallback(xid_callback_t _callback) {
@@ -185,4 +171,4 @@ protected:
 
 }
 
-#endif 
+#endif

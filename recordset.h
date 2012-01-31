@@ -1,4 +1,3 @@
-
 /* Copyright 2011 ZAO "Begun".
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -27,7 +26,7 @@
 namespace slave
 {
 
-// Одна запись БД. Ключ - название поля, значение - пара тип поля, значение
+// One row in a table. Key -- field name, value - pair of (field type, value)
 typedef std::map<std::string, std::pair<std::string, boost::any> > Row;
 
 struct RecordSet
@@ -43,11 +42,11 @@ struct RecordSet
 	
     TypeEvent type_event;
 	 
-    // ID корневого мастера, с которого была отправлена эта запись
+    // Root master ID from which this record originated
     unsigned int master_id;
     RecordSet(): master_id(0) {}
 };
 
 }
 
-#endif 
+#endif

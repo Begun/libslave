@@ -1,4 +1,3 @@
-
 /* Copyright 2011 ZAO "Begun".
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -44,13 +43,11 @@ public:
 
     callback m_callback;
 
-    void call_callback(slave::RecordSet& _rs) {
+    void call_callback(slave::RecordSet& _rs, ExtStateIface &ext_state) {
 
-        // Профайлинг
-        stats::incTableCount(full_name);
-
-        // Стата
-        stats::setLastFilteredUpdateTime();
+        // Some stats
+        ext_state.incTableCount(full_name);
+        ext_state.setLastFilteredUpdateTime();
 
         m_callback(_rs);
     }
@@ -72,4 +69,4 @@ public:
 
 }
 
-#endif 
+#endif

@@ -1,4 +1,3 @@
-
 /* Copyright 2011 ZAO "Begun".
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -12,6 +11,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 
 
 #include "Slave.h"
@@ -56,13 +56,15 @@ void Slave::init()
 
     LOG_TRACE(log, "Initializing libslave...");
 
-    //проверяем версию сервера
     check_master_version();
 
     check_master_binlog_format();
 
+    ext_state.loadMasterInfo( m_master_info.master_log_name, m_master_info.master_log_pos);
+
     LOG_TRACE(log, "Libslave initialized OK");
 }
+
 
 void Slave::close_connection()
 {
@@ -77,9 +79,8 @@ void Slave::createDatabaseStructure_(table_order_t& tabs, RelayLogInfo& rli) con
 
     nanomysql::Connection conn(m_master_info.host.c_str(), m_master_info.user.c_str(),
                                m_master_info.password.c_str(), "", m_master_info.port);
-
-    // Получаем описание charset'ов и collate'ов из базы
     const collate_map_t collate_map = readCollateMap(conn);
+
 
     for (table_order_t::const_iterator it = tabs.begin(); it != tabs.end(); ++ it) {
 
@@ -110,10 +111,11 @@ void Slave::createTable(RelayLogInfo& rli,
 
     for (nanomysql::Connection::result_t::const_iterator i = res.begin(); i != res.end(); ++i) {
 
-        //row.at(0) - имя столбца
-        //row.at(1) - тип столбца
+        //row.at(0) - field name
+        //row.at(1) - field type
         //row.at(2) - collation
         //row.at(3) - can be null
+
 
         std::map<std::string,nanomysql::Connection::field>::const_iterator z = i->find("Field");
 
@@ -136,7 +138,7 @@ void Slave::createTable(RelayLogInfo& rli,
 
         std::string extract_field;
 
-        //получаем тип поля
+        // Extract field type
         for (size_t tmpi = 0; tmpi < type.size(); ++tmpi) {
 
             if (!((type[tmpi] >= 'a' && type[tmpi] <= 'z') ||
@@ -165,7 +167,7 @@ void Slave::createTable(RelayLogInfo& rli,
             collate_map_t::const_iterator it = collate_map.find(collate);
             if (collate_map.end() == it)
                 throw std::runtime_error("Slave::create_table(): cannot find collate '" + collate + "' from field "
-                        + name + " type " + type + " in collate info map");
+                                         + name + " type " + type + " in collate info map");
             ci = it->second;
             LOG_DEBUG(log, "Created column: name-type: " << name << " - " << type
                       << " Field type: " << extract_field << " Collation: " << ci.name);
@@ -207,7 +209,6 @@ void Slave::createTable(RelayLogInfo& rli,
             field = PtrField(new Field_set(name, type));
 
         else if (extract_field == "varchar")
-            //для этого поля количество байт определяется исходя из максимального количества элементов в строке
             field = PtrField(new Field_varstring(name, type, ci));
 
         else if (extract_field == "char")
@@ -268,8 +269,9 @@ struct raii_mysql_connector {
 
     MYSQL* mysql;
     MasterInfo& m_master_info;
+    ExtStateIface &ext_state;
 
-    raii_mysql_connector(MYSQL* m, MasterInfo& mmi) : mysql(m), m_master_info(mmi) {
+    raii_mysql_connector(MYSQL* m, MasterInfo& mmi, ExtStateIface &state) : mysql(m), m_master_info(mmi), ext_state(state) {
 
         connect(false);
     }
@@ -284,11 +286,9 @@ struct raii_mysql_connector {
 
         LOG_TRACE(log, "enter: connect_to_master");
 
-        stats::setConnectTime();
+        ext_state.setConnecting();
 
         if (reconnect) {
-            stats::setReconnectCount();
-
             end_server(mysql);
             mysql_close(mysql);
         }
@@ -308,21 +308,30 @@ struct raii_mysql_connector {
          */
         mysql_options(mysql, MYSQL_OPT_READ_TIMEOUT, &timeout); //(const char*) slave_net_timeout.c_str());
 
+        bool was_error = false;
         while (mysql_real_connect(mysql,
                                   m_master_info.host.c_str(),
                                   m_master_info.user.c_str(),
                                   m_master_info.password.c_str(), 0, m_master_info.port, 0, 0)
                == 0) {
 
-            //если не можем соединиться, засыпаем на время m_master_info.connect_retry
+
+            ext_state.setConnecting();
+            if(!was_error) {
+                LOG_ERROR(log, "Couldn't connect to mysql master " << m_master_info.host << ":" << m_master_info.port);
+                was_error = true;
+            }
 
             LOG_TRACE(log, "try connect to master");
             LOG_TRACE(log, "connect_retry = " << m_master_info.connect_retry << ", reconnect = " << reconnect);
+
+            //
             ::sleep(m_master_info.connect_retry);
         }
 
+        if(was_error)
+            LOG_INFO(log, "Successfully connected to " << m_master_info.host << ":" << m_master_info.port);
 
-        stats::setHost(m_master_info.host);
 
         mysql->reconnect = 1;
 
@@ -338,55 +347,37 @@ void Slave::get_remote_binlog( const boost::function< bool() >& _interruptFlag) 
 
     int count_packet = 0;
 
-    //генерируем server_id
     generateSlaveId();
 
     // Moved to Slave member
     // MYSQL mysql;
 
-    raii_mysql_connector __conn(&mysql, m_master_info);
+    raii_mysql_connector __conn(&mysql, m_master_info, ext_state);
 
     //connect_to_master(false, &mysql);
 
     register_slave_on_master(true, &mysql);
 
-    bool do_master_info_file = (m_master_info.master_info_file.size() > 0);
-
 connected:
 
-    m_master_info.master_log_pos = 0;
-
-    if (do_master_info_file) {
-
-        stats::setMasterInfoFile(m_master_info.master_info_file);
-
-        stats::readMasterInfoFile(m_master_info.master_log_name, 
-                                  m_master_info.master_log_pos);
-    }
-
-    if (!m_master_info.master_log_pos) {
-
-        //получаем последнюю версию бинлога и смещение
+    // ������� ������� �������, ����������� � ext_state �����, ��� �������� �
+    // �� persistent ���������. false � ������, ���� �� ������� �������� �������.
+    if( !ext_state.getMasterInfo(
+                m_master_info.master_log_name,
+                m_master_info.master_log_pos) ) {
+        // ���� ����������� ����� ������� ������� ���,
+        // �������� ��������� ������ ������� � ��������
         std::pair<std::string,unsigned int> row = getLastBinlog();
 
         m_master_info.master_log_name = row.first;
         m_master_info.master_log_pos = row.second;
 
-        if (do_master_info_file) {
-            LOG_INFO(log, "Warning: couldn't fetch binlog state from " << m_master_info.master_info_file
-                     << ", fetched from mysql.");
-        }
+        ext_state.setMasterLogNamePos(m_master_info.master_log_name, m_master_info.master_log_pos);
+        ext_state.saveMasterInfo();
     }
 
     LOG_INFO(log, "Starting from binlog_name:binlog_pos : " << m_master_info.master_log_name
              << ":" << m_master_info.master_log_pos );
-
-    stats::setMasterLogPos(m_master_info.master_log_pos);
-    stats::setMasterLogName(m_master_info.master_log_name);
-
-    if (do_master_info_file) {
-        stats::writeMasterInfoFile();
-    }
 
 
     request_dump(m_master_info.master_log_name, m_master_info.master_log_pos, &mysql);
@@ -400,50 +391,33 @@ connected:
 
             unsigned long len = read_event(&mysql);
 
-            stats::setStateProcessing(true);
+            ext_state.setStateProcessing(true);
 
             count_packet++;
             LOG_TRACE(log, "Got event with length: " << len << " Packet number: " << count_packet );
 
-            //если данные закончились
+            // end of data
 
             if (len == packet_error || len == packet_end_data) {
 
-                LOG_ERROR(log, "len == packet_error. ");
-
                 uint mysql_error_number = mysql_errno(&mysql);
 
-                if (mysql_error_number == ER_NET_PACKET_TOO_LARGE) {
-                    LOG_ERROR(log, "Log entry on master is longer than max_allowed_packet on "
-                              "slave. If the entry is correct, restart the server with a higher value of "
-                              "max_allowed_packet. max_allowed_packet=" << mysql_error(&mysql) );
-                    //continue;
-                }
-
-                // Ошибка -- неизвестный бинлог-файл.
-
-                if (mysql_error_number == ER_MASTER_FATAL_ERROR_READING_BINLOG) {
-                    LOG_ERROR(log, "Myslave: fatal error reading binlog. " <<  mysql_error(&mysql) );
-
-
-                    //usleep(1000*1000);
-                    //continue;
-                }
-
-                // Обработка ошибки 'Lost connection to MySQL'
-                if (mysql_error_number == 2013) {
-
-                    LOG_ERROR(log, "Error from MySQL: " << mysql_error(&mysql) );
-
-                    // Check if connection was closed specially by user
-                    if (_interruptFlag())
-                    {
-                        LOG_INFO(log, "Interrupt flag is true, breaking loop");
+                switch(mysql_error_number) {
+                    case ER_NET_PACKET_TOO_LARGE:
+                        LOG_ERROR(log, "Myslave: Log entry on master is longer than max_allowed_packet on "
+                                  "slave. If the entry is correct, restart the server with a higher value of "
+                                  "max_allowed_packet. max_allowed_packet=" << mysql_error(&mysql) );
                         break;
-                    }
-
-                    stats::setReconnectCount();
-
+                    case ER_MASTER_FATAL_ERROR_READING_BINLOG: // ������ -- ����������� ������-����.
+                        LOG_ERROR(log, "Myslave: fatal error reading binlog. " <<  mysql_error(&mysql) );
+                        break;
+                    case 2013: // ��������� ������ 'Lost connection to MySQL'
+                        LOG_WARNING(log, "Myslave: Error from MySQL: " << mysql_error(&mysql) );
+                        break;
+                    default:
+                        LOG_ERROR(log, "Myslave: Error reading packet from server: " << mysql_error(&mysql)
+                                << "; mysql_error: " << mysql_errno(&mysql));
+                        break;
                 }
 
                 __conn.connect(true);
@@ -470,25 +444,21 @@ connected:
             //
 
             LOG_TRACE(log, "Event log position: " << event.log_pos );
-            m_master_info.master_log_pos = event.log_pos;
 
+            if (event.log_pos != 0) {
+                m_master_info.master_log_pos = event.log_pos;
+                ext_state.setLastEventTimePos(event.when, event.log_pos);
+            }
 
             LOG_TRACE(log, "seconds_behind_master: " << (::time(NULL) - event.when) );
 
-            stats::setLastEventTime(event.when);
 
-            //
-
-
-            //В версии MySQL5.1.23 бинлог можно получить только, начиная с этого эвента XID_EVENT
-            //В MySQL5.1.23 ev->log_pos -  теперь реальное смещение в бинлоге
+            // MySQL5.1.23 binlogs can be read only starting from a XID_EVENT
+            // MySQL5.1.23 ev->log_pos -- the binlog offset
 
             if (event.type == XID_EVENT) {
 
-                //указываем смещение данного event'а и имя бинлога
-
-                stats::setMasterLogPos(m_master_info.master_log_pos);
-                stats::setMasterLogName(m_master_info.master_log_name);
+                ext_state.setMasterLogNamePos(m_master_info.master_log_name, m_master_info.master_log_pos);
 
                 LOG_TRACE(log, "Got XID event. Using binlog name:pos: "
                           << m_master_info.master_log_name << ":" << m_master_info.master_log_pos);
@@ -502,16 +472,13 @@ connected:
                 slave::Rotate_event_info rei(event.buf, event.event_len);
 
                 /*
-                 * new_log_ident - имя нового бинлога
-                 * pos - позиция стартового эвента
+                 * new_log_ident - new binlog name
+                 * pos - position of the starting event
                  */
 
                 LOG_INFO(log, "Got rotate event.");
 
-                /* Если это ложный Rotate event и это не наш лог, то нужно остановить
-                 * передачу. Если это реальный Rotate event (т.к. это не наш лог,
-                 * это в нашем логе, описывающий следующий лог), он печатается(потому
-                 * что это часть нашего binlog)
+                /* WTF
                  */
 
                 if (event.when == 0) {
@@ -519,12 +486,10 @@ connected:
                     //LOG_TRACE(log, "ROTATE_FAKE");
                 }
 
-
-                stats::setMasterLogPos(m_master_info.master_log_pos);
-                stats::setMasterLogName(rei.new_log_ident);
-    
                 m_master_info.master_log_name = rei.new_log_ident;
-                m_master_info.master_log_pos = rei.pos; //всегда равно 4
+                m_master_info.master_log_pos = rei.pos; // this will always be equal to 4
+
+                ext_state.setMasterLogNamePos(m_master_info.master_log_name, m_master_info.master_log_pos);
 
                 LOG_TRACE(log, "ROTATE_EVENT processed OK.");
             }
@@ -577,8 +542,8 @@ std::map<std::string,std::string> Slave::getRowType(const std::string& db_name,
             continue;
         }
         
-        //row[0] - содержит имя таблицы
-        //row[3] - содержит row_format
+        //row[0] - the table name
+        //row[3] - row_format
 
         std::map<std::string,nanomysql::Connection::field>::const_iterator z = i->find("Name");
 
@@ -750,11 +715,10 @@ void Slave::check_master_binlog_format() {
 
 
 
-// Метод проверяет, что в Query_event пришел ALTER TABLE
+// This will check if a QUERY_EVENT holds an "ALTER TABLE ..." string.
 
 static bool checkAlterQuery(const std::string& str)
 {
-    //проверяем на присутствие в запросе ALTER TABLE
     //RegularExpression regexp("^\\s*ALTER\\s+TABLE)", RegularExpression::RE_CASELESS);
 
     enum {
@@ -812,12 +776,14 @@ static bool checkAlterQuery(const std::string& str)
     return false;
 }
 
+
 bool checkCreateQuery(const std::string& str)
 {
     if (0 == ::strncasecmp("create table ", str.c_str(), 13))
         return true;
     return false;
 }
+
 
 
 int Slave::process_event(const slave::Basic_event_info& bei, RelayLogInfo &m_rli, unsigned long long pos)
@@ -832,8 +798,7 @@ int Slave::process_event(const slave::Basic_event_info& bei, RelayLogInfo &m_rli
 
     case QUERY_EVENT:
     {
-
-        //если пришел запрос ALTER TABLE
+        // Check for an ALTER TABLE 
 
         slave::Query_event_info qei(bei.buf, bei.event_len);
 
@@ -842,7 +807,6 @@ int Slave::process_event(const slave::Basic_event_info& bei, RelayLogInfo &m_rli
         if (checkAlterQuery(qei.query) || checkCreateQuery(qei.query)) {
 
             LOG_DEBUG(log, "Rebuilding database structure.");
-            //перестраиваем структуру БД
             createDatabaseStructure();
         }
         break;
@@ -869,7 +833,7 @@ int Slave::process_event(const slave::Basic_event_info& bei, RelayLogInfo &m_rli
 
         Row_event_info roi(bei.buf, bei.event_len, (bei.type == UPDATE_ROWS_EVENT));
 
-        apply_row_event(m_rli, bei, roi);
+        apply_row_event(m_rli, bei, roi, ext_state);
 
         break;
     }
@@ -890,7 +854,7 @@ void Slave::request_dump(const std::string& logname, unsigned long start_positio
     cast to uint32.
     */
 
-    //позиция, с которой нужно считывать binlog
+    //
     //start_position = 4;
 
     int binlog_flags = 0;
@@ -914,7 +878,7 @@ ulong Slave::read_event(MYSQL* mysql)
 {
 
     ulong len;
-    stats::setStateProcessing(false);
+    ext_state.setStateProcessing(false);
 
     len = cli_safe_read(mysql);
 
@@ -925,7 +889,7 @@ ulong Slave::read_event(MYSQL* mysql)
         return packet_error;
     }
 
-    //проверка на конец данных
+    // check for end-of-data
     if (len < 8 && mysql->net.read_pos[0] == 254) {
 
         LOG_ERROR(log, "read_event(): end of data\n");
@@ -951,7 +915,7 @@ void Slave::generateSlaveId()
 
     for (nanomysql::Connection::result_t::const_iterator i = res.begin(); i != res.end(); ++i) {
 
-        //row[0] - содержит имя server_id
+        //row[0] - server_id
 
         std::map<std::string,nanomysql::Connection::field>::const_iterator z = i->find("Server_id");
         

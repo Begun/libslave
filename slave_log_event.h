@@ -1,4 +1,3 @@
-
 /* Copyright 2011 ZAO "Begun".
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -12,6 +11,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 
 #ifndef __SLAVE_SLAVE_LOG_EVENT_H
 #define __SLAVE_SLAVE_LOG_EVENT_H
@@ -169,10 +169,13 @@ struct Row_event_info {
 
 bool read_log_event(const char* buf, unsigned int event_len, Basic_event_info& info);
 
-void apply_row_event(slave::RelayLogInfo& rli, const Basic_event_info& bei, const Row_event_info& roi);
+void apply_row_event(slave::RelayLogInfo& rli, const Basic_event_info& bei, const Row_event_info& roi, ExtStateIface &ext_state);
 
 
 //------------------------------------------------------------------------------------------
+
+
+
 
 
 

@@ -1,4 +1,3 @@
-
 /* Copyright 2011 ZAO "Begun".
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -13,6 +12,7 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 #ifndef __SLAVE_FIELD_H_
 #define __SLAVE_FIELD_H_
 
@@ -24,7 +24,6 @@
 
 #include "collate.h"
 
-//конфликт с макросом, опредленном в MYSQL
 #ifdef test
 #undef test
 #endif /* test */
@@ -69,7 +68,6 @@ protected:
 
 public:
     // HACK!
-    // Борьба с багой row-level репликации mysql.
     bool is_bad;
 		
 };
@@ -225,14 +223,14 @@ public:
 
 class Field_varstring: public Field_longstr {
 
-    /* Количество байт для указания длины (1 или 2 байта)  */
+    // How many bytes are needed for holding the length
     unsigned int length_bytes;
 
     unsigned int pack_length() const { return (unsigned int) field_length+length_bytes; }
 
 public:
-    Field_varstring(const std::string& field_name_arg, const std::string& type,
-            const collate_info& collate);
+    Field_varstring(const std::string& field_name_arg, const std::string& type, 
+                    const collate_info& collate);
 	
     const char* unpack(const char* from);
 };
@@ -245,7 +243,7 @@ public:
     const char* unpack(const char* from);
 
 protected:
-    /* Количество байт, хранящих размер запакованных данных */
+    // Number of bytes for holding the data length
     unsigned int packlength;
 };
 
@@ -281,7 +279,7 @@ public:
 protected:
     unsigned int packlength;
 
-    /* Количество перечисляемых элементов */
+    // Number of elements in enum
     unsigned short count_elements;	
 };
 
@@ -299,4 +297,4 @@ public:
 
 }
 
-#endif 
+#endif

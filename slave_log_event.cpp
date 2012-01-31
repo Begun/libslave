@@ -1,4 +1,3 @@
-
 /* Copyright 2011 ZAO "Begun".
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -12,7 +11,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 
 #include <string>
 #include <vector>
@@ -303,7 +301,7 @@ unsigned char* unpack_row(boost::shared_ptr<slave::Table> table,
     }
 
 
-    //указатель на начало данных, пропускаем master_null_bytes
+    // pointer to start of data; skip master_null_bytes
 
     size_t master_null_byte_count = (n_set_bits(cols, colcnt) + 7) / 8;
 
@@ -370,7 +368,8 @@ unsigned char* unpack_row(boost::shared_ptr<slave::Table> table,
 unsigned char* do_writedelete_row(boost::shared_ptr<slave::Table> table, 
                                   const Basic_event_info& bei,
                                   const Row_event_info& roi, 
-                                  unsigned char* row_start) {
+                                  unsigned char* row_start,
+                                  ExtStateIface &ext_state) {
 
 
     slave::RecordSet _record_set;
@@ -387,7 +386,7 @@ unsigned char* do_writedelete_row(boost::shared_ptr<slave::Table> table,
     _record_set.type_event = (bei.type == WRITE_ROWS_EVENT ? slave::RecordSet::Write : slave::RecordSet::Delete);
     _record_set.master_id = bei.server_id;
 
-    table->call_callback(_record_set);
+    table->call_callback(_record_set, ext_state);
 
     return t;
 }
@@ -395,7 +394,8 @@ unsigned char* do_writedelete_row(boost::shared_ptr<slave::Table> table,
 unsigned char* do_update_row(boost::shared_ptr<slave::Table> table, 
                              const Basic_event_info& bei,
                              const Row_event_info& roi, 
-                             unsigned char* row_start) {
+                             unsigned char* row_start,
+                             ExtStateIface &ext_state) {
 
     slave::RecordSet _record_set;
 
@@ -417,13 +417,13 @@ unsigned char* do_update_row(boost::shared_ptr<slave::Table> table,
     _record_set.type_event = slave::RecordSet::Update;
     _record_set.master_id = bei.server_id;
 
-    table->call_callback(_record_set);
+    table->call_callback(_record_set, ext_state);
 
     return t;
 }
 
 
-void apply_row_event(slave::RelayLogInfo& rli, const Basic_event_info& bei, const Row_event_info& roi) {
+void apply_row_event(slave::RelayLogInfo& rli, const Basic_event_info& bei, const Row_event_info& roi, ExtStateIface &ext_state) {
 
 
     std::pair<std::string,std::string> key = rli.getTableNameById(roi.m_table_id);
@@ -444,10 +444,10 @@ void apply_row_event(slave::RelayLogInfo& rli, const Basic_event_info& bei, cons
 
             if (bei.type == UPDATE_ROWS_EVENT) {
 
-                row_start = do_update_row(table, bei, roi, row_start);
+                row_start = do_update_row(table, bei, roi, row_start, ext_state);
 
             } else {
-                row_start = do_writedelete_row(table, bei, roi, row_start);
+                row_start = do_writedelete_row(table, bei, roi, row_start, ext_state);
             }
         }
     }

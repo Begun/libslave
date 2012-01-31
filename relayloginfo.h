@@ -1,4 +1,3 @@
-
 /* Copyright 2011 ZAO "Begun".
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -12,7 +11,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 
 #ifndef __SLAVE_RELAYLOGINFO_H_
 #define __SLAVE_RELAYLOGINFO_H_
@@ -81,4 +79,4 @@ public:
  
 };
 }
-#endif 
+#endif

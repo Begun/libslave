@@ -1,4 +1,3 @@
-
 /* Copyright 2011 ZAO "Begun".
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -16,8 +15,7 @@
 
 #include <cstdio>
 #include <vector>
-#include <stdexcept>
-
+#include <stdexcept>                                                                                                                
 #include <mysql/my_global.h>
 #undef min
 #undef max
@@ -200,8 +198,8 @@ const char* Field_time::unpack(const char* from) {
 Field_enum::Field_enum(const std::string& field_name_arg, const std::string& type):
     Field_str(field_name_arg, type) {
 
-    //для поля типа enum нужно подсчитать количество перечисляемых значений 
-    // если количество перечислений меньше 255, то этот тип занимает 1 байт
+    // for fields of type 'enum' the number of elements needs to be counted
+    // if the number of elements is less than 255, then this type has a size of 1 byte
     count_elements = 1;
     for (std::string::const_iterator i = type.begin(); i != type.end(); ++i) {
         if (*i == ',') {
@@ -216,7 +214,6 @@ const char* Field_enum::unpack(const char* from) {
 
     if (pack_length() == 1) {
 
-        //для удобства использования в mysql++ приводим к int
         tmp = int(*((char*)(from)));
 
     } else {
@@ -233,8 +230,8 @@ const char* Field_enum::unpack(const char* from) {
 Field_set::Field_set(const std::string& field_name_arg, const std::string& type):
     Field_enum(field_name_arg, type) {
 
-    //для поля типа set нужно подсчитать количество элементов множества
-    //определяется по формуле (N+7)/8
+    // for fields of type 'enum' the number of elements needs to be counted
+    // the formula for determining size is (N+7)/8
 
     count_elements = 1;
     for (std::string::const_iterator i = type.begin(); i != type.end(); ++i) {
@@ -246,7 +243,6 @@ Field_set::Field_set(const std::string& field_name_arg, const std::string& type)
 
 const char* Field_set::unpack(const char* from) {
 	
-    //для удобства использования в mysql++ приводим к типу unsigned long long
     ulonglong tmp;
 
     switch(pack_length()) {
@@ -291,6 +287,7 @@ const char* Field_longstr::unpack(const char* from) {
     }
 
     std::string tmp(from, length_row);
+
     field_data = tmp;
 
     LOG_TRACE(log, "  longstr: '" << tmp << "' // " << field_length << " " << length_row);
@@ -301,7 +298,7 @@ const char* Field_longstr::unpack(const char* from) {
 Field_string::Field_string(const std::string& field_name_arg, const std::string& type):
     Field_longstr(field_name_arg, type) {
 
-    //для этого поля количество байт определяется исходя из количества символов в строке
+    // field size is determined by string type capacity
     std::string::size_type b = type.find('(', 0);
     std::string::size_type e = type.find(')', 0);
 
@@ -309,18 +306,19 @@ Field_string::Field_string(const std::string& field_name_arg, const std::string&
         throw std::runtime_error("Field_string: Incorrect field CHAR");
     }
 
-    //получаем размер строки
     std::string str_count(type, b+1, e-b-1);
         
     field_length = ::atoi(str_count.c_str());
 }
 
 
+/*
 
+ */
 Field_varstring::Field_varstring(const std::string& field_name_arg, const std::string& type, const collate_info& collate):
     Field_longstr(field_name_arg, type) {
 
-    //для этого поля количество байт определяется исходя из количества элементов в строке
+    // field size is determined by string type capacity
 
     std::string::size_type b = type.find('(', 0);
     std::string::size_type e = type.find(')', 0);
@@ -329,16 +327,15 @@ Field_varstring::Field_varstring(const std::string& field_name_arg, const std::s
         throw std::runtime_error("Field_string: Incorrect field VARCHAR");
     }
 
-    //получаем размер строки
     std::string str_count(type, b+1, e-b-1); 
     int symbols = atoi(str_count.c_str());
     int bytes = symbols * collate.maxlen;
 
-    //количество байт, занимаемых в памяти
+    // number of bytes for holding the length
 
     length_bytes = ((bytes < 256) ? 1 : 2);
 	
-    //длина символов
+    // max length of string
     field_length = symbols;
 }
 
@@ -355,6 +352,7 @@ const char* Field_varstring::unpack(const char* from) {
     }
 
     std::string tmp(from, length_row);
+
     field_data = tmp;
 
     LOG_TRACE(log, "  varstr: '" << tmp << "' // " << length_bytes << " " << length_row);
@@ -379,8 +377,9 @@ const char* Field_blob::unpack(const char* from) {
 
     length_row = get_length(from); 
     from += packlength; 
-	
+
     std::string tmp(from, length_row);
+
     field_data = tmp;
 
     LOG_TRACE(log, "  blob: '" << tmp << "' // " << packlength << " " << length_row);
@@ -408,7 +407,7 @@ unsigned int Field_blob::get_length(const char *pos) {
         }
         */
         tmp = sint2korr(pos);
-
+    			
         return (unsigned int) tmp;
     			
     }

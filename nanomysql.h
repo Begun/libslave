@@ -1,4 +1,3 @@
-#ifndef __NANOMYSQL_H
 /* Copyright 2011 ZAO "Begun".
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -13,6 +12,7 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __NANOMYSQL_H
 #define __NANOMYSQL_H
 
 #include <boost/bind.hpp>
@@ -20,15 +20,17 @@
 
 namespace nanomysql {
 
-struct Connection {
+class Connection {
 
-private:
-    void throw_error(std::string msg, const std::string& m2 = "") {
+    MYSQL* m_conn;
+
+    void throw_error(std::string msg, const std::string& m2 = "")
+    {
 
         msg += ": ";
         msg += ::mysql_error(m_conn);
         msg += " : ";
-        
+
         char n[32];
         ::snprintf(n, 31, "%d", ::mysql_errno(m_conn));
         msg += n;
@@ -41,32 +43,56 @@ private:
 
         throw std::runtime_error(msg);
     }
-public:
 
-
-
-    Connection(const std::string& host, const std::string& user, const std::string& password,
-               const std::string& db = "", int port = 0) {
-
+    void init_(const std::string& host, const std::string& user, const std::string& password,
+               const std::string& db, int port)
+    {
         m_conn = ::mysql_init(NULL);
 
         if (!m_conn)
             throw std::runtime_error("Could not mysql_init()");
 
         if (::mysql_real_connect(m_conn, host.c_str(), user.c_str(), password.c_str(), db.c_str(), port, NULL, 0) == NULL) {
-            throw_error("Could not mysql_real_connect()"); 
+            throw_error("Could not mysql_real_connect()");
         }
     }
+public:
 
-    ~Connection() {
+    struct Attributes {
+        std::string host;
+        std::string user;
+        std::string password;
+        std::string db;
+        int port;
+
+        Attributes() : port(0) {}
+
+        Attributes(const std::string& _host, const std::string& _user, const std::string& _password,
+               const std::string& _db = "", int _port = 0) :
+            host(_host), user(_user), password(_password), db(_db), port(_port)
+        {}
+    };
+
+    Connection(const Attributes &attr)
+    {
+        init_(attr.host, attr.user, attr.password, attr.db, attr.port);
+    }
+
+    Connection(const std::string& host, const std::string& user, const std::string& password,
+               const std::string& db = "", int port = 0)
+    {
+        init_(host, user, password, db, port);
+    }
+
+    ~Connection()
+    {
         ::mysql_close(m_conn);
     }
 
-    void query(const std::string& q) {
-
-        if (::mysql_real_query(m_conn, q.data(), q.size()) != 0) {
+    void query(const std::string& q)
+    {
+        if (::mysql_real_query(m_conn, q.data(), q.size()) != 0)
             throw_error("mysql_query() failed", q);
-        }
     }
 
 
@@ -78,10 +104,10 @@ public:
 
     struct field {
         std::string name;
-        size_t type;
+        enum enum_field_types type;
         std::string data;
 
-        field(const std::string& n, size_t t) : name(n), type(t) {}
+        field(const std::string& n, enum enum_field_types t) : name(n), type(t) {}
 
         /*
         template <typename T>
@@ -95,8 +121,8 @@ public:
 
 
     template <typename F>
-    void use(F f) {
-
+    void use(F f)
+    {
         _mysql_res_wrap re(::mysql_use_result(m_conn));
 
         if (re.s == NULL) {
@@ -104,13 +130,13 @@ public:
         }
 
         size_t num_fields = ::mysql_num_fields(re.s);
-        
+
         std::map<std::string,field> fields;
         std::vector<std::map<std::string,field>::iterator> fields_n;
 
         while (1) {
             MYSQL_FIELD* ff = ::mysql_fetch_field(re.s);
-                
+
             if (!ff) break;
 
             fields_n.push_back(
@@ -142,12 +168,10 @@ public:
 
     typedef std::vector<std::map<std::string, field> > result_t;
 
-    void store(result_t& out) {
+    void store(result_t& out)
+    {
         use(boost::bind(&result_t::push_back, &out, _1));
     }
-
-
-    MYSQL* m_conn;
 };
 
 }
