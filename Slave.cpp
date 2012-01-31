@@ -124,7 +124,7 @@ void Slave::createTable(RelayLogInfo& rli,
         //row.at(2) - collation
         //row.at(3) - can be null
 
-        std::map<std::string,nanomysql::Connection::field>::const_iterator z = i->find("Field");
+        std::map<std::string,nanomysql::field>::const_iterator z = i->find("Field");
 
         if (z == i->end())
             throw std::runtime_error("Slave::create_table(): DESCRIBE query did not return 'Field'");
