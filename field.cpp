@@ -22,6 +22,7 @@
 
 #include <mysql/m_string.h>
 
+#include "dec_util.h"
 #include "field.h"
 
 #include "Logging.h"
@@ -46,7 +47,7 @@ const char* Field_tiny::unpack(const char* from) {
     field_data = tmp;
 
     LOG_TRACE(log, "  tiny: " << (int)(tmp) << " // " << pack_length());
-    
+
     return from + pack_length();
 }
 
@@ -105,9 +106,6 @@ const char* Field_longlong::unpack(const char* from) {
 
 Field_real::Field_real(const std::string& field_name_arg, const std::string& type):
     Field_num(field_name_arg, type) {}
-
-Field_decimal::Field_decimal(const std::string& field_name_arg, const std::string& type):
-    Field_real(field_name_arg, type) {}
 
 Field_double::Field_double(const std::string& field_name_arg, const std::string& type):
     Field_real(field_name_arg, type) {}
@@ -223,7 +221,7 @@ const char* Field_enum::unpack(const char* from) {
     field_data = tmp;
 
     LOG_TRACE(log, "  enum: " << tmp << " // " << pack_length());
-		
+
     return from + pack_length();
 }
 
@@ -242,7 +240,6 @@ Field_set::Field_set(const std::string& field_name_arg, const std::string& type)
 }
 
 const char* Field_set::unpack(const char* from) {
-	
     ulonglong tmp;
 
     switch(pack_length()) {
@@ -263,7 +260,7 @@ const char* Field_set::unpack(const char* from) {
         break;
     default:
         tmp = uint8korr(from);
-        break;				
+        break;
     }
 
     field_data = tmp;
@@ -276,45 +273,6 @@ const char* Field_set::unpack(const char* from) {
 Field_longstr::Field_longstr(const std::string& field_name_arg, const std::string& type):
     Field_str(field_name_arg, type)  {}
 
-const char* Field_longstr::unpack(const char* from) {
-
-    if (field_length > 255) {
-    	length_row = (*((unsigned short *)(from)));
-    	from += 2;
-
-    } else {
-    	length_row = (unsigned int) (unsigned char) *from++;
-    }
-
-    std::string tmp(from, length_row);
-
-    field_data = tmp;
-
-    LOG_TRACE(log, "  longstr: '" << tmp << "' // " << field_length << " " << length_row);
-
-    return from + length_row;
-}
-
-Field_string::Field_string(const std::string& field_name_arg, const std::string& type):
-    Field_longstr(field_name_arg, type) {
-
-    // field size is determined by string type capacity
-    std::string::size_type b = type.find('(', 0);
-    std::string::size_type e = type.find(')', 0);
-
-    if (b == std::string::npos || e == std::string::npos) {
-        throw std::runtime_error("Field_string: Incorrect field CHAR");
-    }
-
-    std::string str_count(type, b+1, e-b-1);
-        
-    field_length = ::atoi(str_count.c_str());
-}
-
-
-/*
-
- */
 Field_varstring::Field_varstring(const std::string& field_name_arg, const std::string& type, const collate_info& collate):
     Field_longstr(field_name_arg, type) {
 
@@ -332,7 +290,6 @@ Field_varstring::Field_varstring(const std::string& field_name_arg, const std::s
     int bytes = symbols * collate.maxlen;
 
     // number of bytes for holding the length
-
     length_bytes = ((bytes < 256) ? 1 : 2);
 	
     // max length of string
@@ -341,14 +298,15 @@ Field_varstring::Field_varstring(const std::string& field_name_arg, const std::s
 
 const char* Field_varstring::unpack(const char* from) {
 
+    unsigned length_row;
     if (length_bytes == 1) {
-    	//length_row = (unsigned int) (unsigned char) (*to = *from++);
-    	length_row = (unsigned int) (unsigned char) (*from++);
+        //length_row = (unsigned int) (unsigned char) (*to = *from++);
+        length_row = (unsigned int) (unsigned char) (*from++);
 
     } else {
         length_row = uint2korr(from);
-    	from++;
-    	from++;
+        from++;
+        from++;
     }
 
     std::string tmp(from, length_row);
@@ -375,8 +333,8 @@ Field_longblob::Field_longblob(const std::string& field_name_arg, const std::str
 
 const char* Field_blob::unpack(const char* from) {
 
-    length_row = get_length(from); 
-    from += packlength; 
+    const unsigned length_row = get_length(from);
+    from += packlength;
 
     std::string tmp(from, length_row);
 
@@ -396,7 +354,7 @@ unsigned int Field_blob::get_length(const char *pos) {
         return (unsigned int) (unsigned char) pos[0];
     case 2:
     {
-    			
+
         unsigned short tmp = 0;
 
         /*
@@ -409,7 +367,7 @@ unsigned int Field_blob::get_length(const char *pos) {
         tmp = sint2korr(pos);
     			
         return (unsigned int) tmp;
-    			
+
     }
     case 3:
         return (unsigned int) uint3korr(pos);
@@ -429,9 +387,56 @@ unsigned int Field_blob::get_length(const char *pos) {
     }
 
     }
-    
+
     throw std::runtime_error("Oops, wrong packlength in Field_blob::get_length(): wanted 1, 2, 3 or 4.");
 }
 
+Field_decimal::Field_decimal(const std::string& field_name_arg, const std::string& type):
+    Field_longstr(field_name_arg, type),
+    intg(0),
+    frac(0)
+{
+    // Получаем размеры поля: decimal(M,D)
+    // M - общее количество цифр, M-D - до запятой
+
+    const std::string::size_type b = type.find('(', 0);
+
+    if (b == std::string::npos) {
+        throw std::runtime_error("Field_string: Incorrect field DECIMAL");
+    }
+
+    int m, d;
+    if (2 != sscanf(type.c_str() + b, "(%d,%d)", &m, &d) || m <= 0 || m < d) {
+        throw std::runtime_error("Field_string: Incorrect field DECIMAL");
+    }
+
+    intg = m - d;
+    frac = d;
+
+    static const int dig2bytes[] = {0, 1, 1, 2, 2, 3, 3, 4, 4, 4};
+    field_length = (intg / 9) * 4 + dig2bytes[intg % 9] + (frac / 9) * 4 + dig2bytes[frac % 9];
 }
 
+const char* Field_decimal::unpack(const char *from)
+{
+    double result = dec2double(from);
+    field_data = result;
+    return from + pack_length();
+}
+
+double Field_decimal::dec2double(const char* from)
+{
+    decimal_t val;
+    val.len = intg + frac;
+    size_t bytes = val.len * sizeof(decimal_digit_t);
+    val.buf = (decimal_digit_t *)alloca(bytes);
+    memset(val.buf, 0, bytes);
+
+    dec_util::bin2dec(from, &val, intg+frac, frac);
+    double v = 0;
+    dec_util::dec2dbl(&val, &v);
+
+    return v;
+}
+
+} // namespace slave

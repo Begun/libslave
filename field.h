@@ -31,57 +31,32 @@
 namespace slave
 {
 
-
-class Field {
-
-public:	
-
-    unsigned int field_length;		
-
+class Field
+{
+public:
     const std::string field_type;
     const std::string field_name;
 
     boost::any field_data;
-	
+
     virtual const char* unpack(const char *from) = 0;
 
     Field(const std::string& field_name_arg, const std::string& type) :
-        field_type(type), 
-        field_name(field_name_arg), 
-        is_bad(false)
+        field_type(type),
+        field_name(field_name_arg)
         {}
 
     virtual ~Field() {}
-  	
-    virtual unsigned int pack_length() const {
-        return (unsigned int) field_length;
-    }
-	
+
+    virtual unsigned int pack_length() const = 0;
+
     const std::string getFieldName() {
         return field_name;
     }
-	
-	 	 
-protected:	
-	
-    //const std::string table_name;
-
-public:
-    // HACK!
-    bool is_bad;
-		
 };
 
-
-
-/*
- *
- */
-
-
-
 class Field_num: public Field {
-public:	
+public:
     Field_num(const std::string& field_name_arg, const std::string& type);
 };
 
@@ -92,27 +67,22 @@ public:
 };
 
 class Field_longstr: public Field_str {
+
+protected:
+    unsigned int field_length;
+
 public:
     Field_longstr(const std::string& field_name_arg, const std::string& type);
 
-    const char* unpack(const char* from);
-
-protected:
-    unsigned int length_row;
+    unsigned int pack_length() const {
+        return field_length;
+    }
 };
 
 
 class Field_real: public Field_num {
 public:
-    Field_real(const std::string& field_name_arg, const std::string& type);	
-};
-
-class Field_decimal: public Field_real {
-public:
-    Field_decimal(const std::string& field_name_arg, const std::string& type);	
-};
-
-class Field_new_decimal: public Field_num {
+    Field_real(const std::string& field_name_arg, const std::string& type);
 };
 
 class Field_tiny: public Field_num {
@@ -134,7 +104,7 @@ class Field_medium: public Field_num {
     unsigned int pack_length() const { return 3; }
 public:
     Field_medium(const std::string& field_name_arg, const std::string& type);
-	
+
     const char* unpack(const char* from);
 };
 
@@ -142,7 +112,7 @@ class Field_long: public Field_num {
     unsigned int pack_length() const { return 4; }
 public:
     Field_long(const std::string& field_name_arg, const std::string& type);
-	
+
     const char* unpack(const char* from);
 };
 
@@ -150,7 +120,7 @@ class Field_longlong: public Field_num {
     unsigned int pack_length() const { return 8; }
 public:
     Field_longlong(const std::string& field_name_arg, const std::string& type);
-	
+
     const char* unpack(const char* from);
 };
 
@@ -158,67 +128,54 @@ class Field_float: public Field_real {
     unsigned int pack_length() const { return sizeof(float); }
 public:
     Field_float(const std::string& field_name_arg, const std::string& type);
-	
+
     const char* unpack(const char* from);
 };
 
 class Field_double: public Field_real {
     unsigned int pack_length() const { return sizeof(double); }
-public:	
+public:
     Field_double(const std::string& field_name_arg, const std::string& type);
-	
-    const char* unpack(const char* from);
-};
 
-class Field_null: public Field_str {
-    unsigned int pack_length() const { return 0; }
+    const char* unpack(const char* from);
 };
 
 class Field_timestamp: public Field_str {
     unsigned int pack_length() const { return 4; }
 public:
     Field_timestamp(const std::string& field_name_arg, const std::string& type);
-	
+
     const char* unpack(const char* from);
 };
 
 class Field_year: public Field_tiny {
 public:
-    Field_year(const std::string& field_name_arg, const std::string& type);	
+    Field_year(const std::string& field_name_arg, const std::string& type);
 };
 
 class Field_date: public Field_str {
     unsigned int pack_length() const { return 3; }
 public:
-    Field_date(const std::string& field_name_arg, const std::string& type);	
-	
-    const char* unpack(const char* from);
-};
+    Field_date(const std::string& field_name_arg, const std::string& type);
 
-class Field_newdate: public Field_str {
-    unsigned int pack_length() const { return 3; } 	
+    const char* unpack(const char* from);
 };
 
 class Field_time: public Field_str {
     unsigned int pack_length() const { return 3; }
 public:
-	
-    Field_time(const std::string& field_name_arg, const std::string& type);	
-	
+
+    Field_time(const std::string& field_name_arg, const std::string& type);
+
     const char* unpack(const char* from);
 };
 
 class Field_datetime: public Field_str {
     unsigned int pack_length() const { return 8; }
 public:
-    Field_datetime(const std::string& field_name_arg, const std::string& type);	
+    Field_datetime(const std::string& field_name_arg, const std::string& type);
 
     const char* unpack(const char* from);
-};
-
-class Field_string: public Field_longstr {
-public:
-    Field_string(const std::string& field_name_arg, const std::string& type);
 };
 
 class Field_varstring: public Field_longstr {
@@ -237,7 +194,7 @@ public:
 
 class Field_blob: public Field_longstr {
     unsigned int get_length(const char *ptr);
-public:	
+public:
     Field_blob(const std::string& field_name_arg, const std::string& type);
 
     const char* unpack(const char* from);
@@ -248,21 +205,19 @@ protected:
 };
 
 class Field_tinyblob: public Field_blob {
-public:	
+public:
     Field_tinyblob(const std::string& field_name_arg, const std::string& type);
 };
 
 class Field_mediumblob: public Field_blob {
-public:	
+public:
     Field_mediumblob(const std::string& field_name_arg, const std::string& type);
 };
 
 class Field_longblob: public Field_blob {
-public:	
+public:
     Field_longblob(const std::string& field_name_arg, const std::string& type);
 };
-
-class Field_geom: public Field_blob { };
 
 class Field_enum: public Field_str {
 
@@ -273,7 +228,7 @@ class Field_enum: public Field_str {
 public:
     Field_enum(const std::string& field_name_arg, const std::string& type);
 
-	
+
     const char* unpack(const char* from);
 
 protected:
@@ -293,6 +248,15 @@ public:
     Field_set(const std::string& field_name_arg, const std::string& type);
 
     const char* unpack(const char* from);
+};
+
+class Field_decimal : public Field_longstr {
+    double dec2double(const char*);
+    int intg;
+    int frac;
+public:
+    Field_decimal(const std::string& field_name_arg, const std::string& type);
+    const char* unpack(const char *from);
 };
 
 }

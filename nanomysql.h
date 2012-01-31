@@ -16,7 +16,11 @@
 #define __NANOMYSQL_H
 
 #include <boost/bind.hpp>
-
+#include <mysql/mysql.h>
+#include "nanofield.h"
+#include <stdexcept>
+#include <stdio.h>
+#include <vector>
 
 namespace nanomysql {
 
@@ -43,6 +47,16 @@ class Connection {
 
         throw std::runtime_error(msg);
     }
+
+    struct _mysql_res_wrap {
+        MYSQL_RES* s;
+        _mysql_res_wrap(MYSQL_RES* _s) : s(_s) {}
+        ~_mysql_res_wrap() { if (s != NULL) ::mysql_free_result(s); }
+    };
+
+public:
+    Connection(const std::string& host, const std::string& user, const std::string& password,
+               const std::string& db = "", int port = 0) {
 
     void init_(const std::string& host, const std::string& user, const std::string& password,
                const std::string& db, int port)
@@ -95,31 +109,6 @@ public:
             throw_error("mysql_query() failed", q);
     }
 
-
-    struct _mysql_res_wrap {
-        MYSQL_RES* s;
-        _mysql_res_wrap(MYSQL_RES* _s) : s(_s) {}
-        ~_mysql_res_wrap() { if (s != NULL) ::mysql_free_result(s); }
-    };
-
-    struct field {
-        std::string name;
-        enum enum_field_types type;
-        std::string data;
-
-        field(const std::string& n, enum enum_field_types t) : name(n), type(t) {}
-
-        /*
-        template <typename T>
-        operator T() {
-            T ret;
-            files::scn<files::string_as_buffer>(files::string_as_buffer(data, '\0')).scan(ret, "\0", 1);
-            return ret;
-        }
-        */
-    };
-
-
     template <typename F>
     void use(F f)
     {
@@ -129,10 +118,10 @@ public:
             throw_error("mysql_use_result() failed");
         }
 
-        size_t num_fields = ::mysql_num_fields(re.s);
+        const size_t num_fields = ::mysql_num_fields(re.s);
 
-        std::map<std::string,field> fields;
-        std::vector<std::map<std::string,field>::iterator> fields_n;
+        fields_t fields;
+        std::vector<fields_t::iterator> fields_n;
 
         while (1) {
             MYSQL_FIELD* ff = ::mysql_fetch_field(re.s);
@@ -140,8 +129,8 @@ public:
             if (!ff) break;
 
             fields_n.push_back(
-                fields.insert(fields.end(), 
-                              std::make_pair(ff->name, 
+                fields.insert(fields.end(),
+                              std::make_pair(ff->name,
                                              field(ff->name, ff->type))));
         }
 
@@ -156,7 +145,7 @@ public:
                 break;
             }
 
-            unsigned long* lens = ::mysql_fetch_lengths(re.s);
+            const unsigned long* lens = ::mysql_fetch_lengths(re.s);
 
             for (size_t z = 0; z != num_fields; ++z) {
                 fields_n[z]->second.data.assign(row[z], lens[z]);
@@ -166,11 +155,15 @@ public:
         }
     }
 
-    typedef std::vector<std::map<std::string, field> > result_t;
+    typedef std::vector<fields_t> result_t;
 
-    void store(result_t& out)
-    {
+    void store(result_t& out) {
+#ifndef __GXX_EXPERIMENTAL_CXX0X__
         use(boost::bind(&result_t::push_back, &out, _1));
+#else
+        use( [&out] (const std::map<std::string,field>& f) { out.push_back(f); } );
+#endif
+
     }
 };
 

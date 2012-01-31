@@ -58,8 +58,8 @@ public:
 
     std::string full_name;
 
-    Table(const std::string& db_name, const std::string& tbl_name) : 
-        table_name(tbl_name), database_name(db_name), 
+    Table(const std::string& db_name, const std::string& tbl_name) :
+        table_name(tbl_name), database_name(db_name),
         full_name(database_name + "." + table_name)
         {}
 
