@@ -1,4 +1,3 @@
-
 /* Copyright 2011 ZAO "Begun".
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -13,12 +12,9 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 #ifndef __SLAVE_SLAVESTATS_H_
 #define __SLAVE_SLAVESTATS_H_
-
-#include <map>
-#include <iostream>
-#include <fstream>
 
 
 /*
@@ -31,113 +27,152 @@
  */
 
 
-namespace slave {
+#include <sys/time.h>
 
-namespace stats {
 
-class SlaveStats {
-public:
-			
-    std::string connection_host;	
+
+namespace slave
+{
+
+struct MasterInfo {
+
+    std::string host;
+    unsigned int port;
+    std::string user;
+    std::string password;
     std::string master_log_name;
     unsigned long master_log_pos;
-    unsigned int reconnect_count;
-    bool state_processing;
-    time_t last_event_time;
-    time_t last_update;
-    time_t last_filtered_update;
-    time_t time_connect;
+    unsigned int connect_retry;
 
-    std::map<std::string,size_t> table_counts;
+    MasterInfo() : port(3306), master_log_pos(0), connect_retry(10) {}
 
-    std::string master_info_file;
-	
-    SlaveStats() :
+    MasterInfo(std::string host_, unsigned int port_, std::string user_,
+               std::string password_, unsigned int connect_retry_) :
+        host(host_),
+        port(port_),
+        user(user_),
+        password(password_),
+        master_log_name(),
         master_log_pos(0),
-        reconnect_count(0),
-        state_processing(false),
-        last_event_time(0),
-        last_update(0),
-        last_filtered_update(0),
-        time_connect(0)
+        connect_retry(connect_retry_)
         {}
-
-    void writeMasterInfoFile() {
-
-        std::ofstream f(master_info_file.c_str(), std::ios::out | std::ios::trunc);
-
-        if (!f) 
-            throw std::runtime_error("slave::writeMasterInfoFile(): Could not open file: " + master_info_file);
-
-        f << master_log_pos << '\n' << master_log_name << '\n';
-    }
-
-
-    void readMasterInfoFile(std::string& logname, unsigned long& pos) {
-
-        std::ifstream f(master_info_file.c_str());
-
-        if (!f) {
-            pos = 0;
-            return;
-        }
-
-        f >> pos;
-
-        size_t n = f.tellg();
-        f.seekg(0, std::ios::end);
-        size_t e = f.tellg();
-        f.seekg(n+1, std::ios::beg);
-
-        logname.resize(e - n - 1);
-
-        f.getline((char*)logname.c_str(), logname.size());
-
-        master_log_pos = pos;
-        master_log_name = logname;
-    }
-
 };
 
-/// 
+struct State {
+    time_t          connect_time;
+    time_t          last_filtered_update;
+    time_t          last_event_time;
+    time_t          last_update;
+    std::string     master_log_name;
+    unsigned long   master_log_pos;
+    unsigned long   intransaction_pos;
+    unsigned int    connect_count;
+    bool            state_processing;
 
-inline SlaveStats& stats() { 
-    static SlaveStats _stats;
-    return _stats;
+    State() :
+        connect_time(0),
+        last_filtered_update(0),
+        last_event_time(0),
+        last_update(0),
+        master_log_pos(0),
+        intransaction_pos(0),
+        connect_count(0),
+        state_processing(false)
+    {}
+};
+
+struct ExtStateIface {
+    virtual State getState() = 0;
+    virtual void setConnecting() = 0;
+    virtual time_t getConnectTime() = 0;
+    virtual void setLastFilteredUpdateTime() = 0;
+    virtual time_t getLastFilteredUpdateTime() = 0;
+    virtual void setLastEventTimePos(time_t t, unsigned long pos) = 0;
+    virtual time_t getLastUpdateTime() = 0;
+    virtual time_t getLastEventTime() = 0;
+    virtual unsigned long getIntransactionPos() = 0;
+    virtual void setMasterLogNamePos(const std::string& log_name, unsigned long pos) = 0;
+    virtual unsigned long getMasterLogPos() = 0;
+    virtual std::string getMasterLogName() = 0;
+
+    // Сохраняет master info в persistent хранилище, например, файл или БД.
+    // В случае какой-нибудь ошибки, будет пытаться сохранить master info до
+    // тех пор, пока не удастся это сделать.
+    virtual void saveMasterInfo() = 0;
+
+    // Функция читает master info из persistent хранилища.
+    // Если master info не был ранее сохранён (например, первый запуск демона),
+    // то библиотека читает бинлоги с текущей позиции.
+    // Функция возвращает true, если считана сохранённая позиция, и false - если
+    // нет сохранённой позиции (в этом случае функция обнуляет позицию и очищает
+    // имя лог-файла).
+    // В случае какой-нибудь ошибки чтения из хранилища, функция будет пытаться
+    // прочитать снова, пока не сможет прочитать сохранённую позицию или выяснить
+    // её отсутствие.
+    virtual bool loadMasterInfo(std::string& logname, unsigned long& pos) = 0;
+
+    // Работает так же, как loadMasterInfo(), только записывает в pos последнюю
+    // текущую позицию внутри транзакции, если такая есть.
+    bool getMasterInfo(std::string& logname, unsigned long& pos)
+    {
+        unsigned long in_trans_pos = getIntransactionPos();
+        std::string master_logname = getMasterLogName();
+
+        if(in_trans_pos!=0 && !master_logname.empty()) {
+            logname = master_logname;
+            pos = in_trans_pos;
+            return true;
+        } else
+            return loadMasterInfo(logname, pos);
+    }
+    virtual unsigned int getConnectCount() = 0;
+    virtual void setStateProcessing(bool _state) = 0;
+    virtual bool getStateProcessing() = 0;
+    // Стандартного формата для статистики распределения событий по таблицам нет,
+    // поэтому нет функций получения этой статистики.
+    virtual void initTableCount(const std::string& t) = 0;
+    virtual void incTableCount(const std::string& t) = 0;
+};
+
+
+// Объект-заглушка для ответы на запросы статы через StateHolder, когда libslave
+// ещё не проинициализирован
+struct EmptyExtState: public ExtStateIface, protected State {
+    ~EmptyExtState() {}
+    virtual State getState() { return *this; }
+    virtual void setConnecting() {}
+    virtual time_t getConnectTime() { return 0; }
+    virtual void setLastFilteredUpdateTime() {}
+    virtual time_t getLastFilteredUpdateTime() { return 0; }
+    virtual void setLastEventTimePos(time_t t, unsigned long pos) {}
+    virtual time_t getLastUpdateTime() { return 0; }
+    virtual time_t getLastEventTime() { return 0; }
+    virtual unsigned long getIntransactionPos() { return 0; }
+    virtual void setMasterLogNamePos(const std::string& log_name, unsigned long pos) {}
+    virtual unsigned long getMasterLogPos() { return 0; }
+    virtual std::string getMasterLogName() { return ""; }
+    virtual void saveMasterInfo() {}
+    virtual bool loadMasterInfo(std::string& logname, unsigned long& pos) { while(true); return false; }
+    virtual unsigned int getConnectCount() { return 0; }
+    virtual void setStateProcessing(bool _state) {}
+    virtual bool getStateProcessing() { return false; }
+    virtual void initTableCount(const std::string& t) {}
+    virtual void incTableCount(const std::string& t) {}
+};
+
+// Предназначен для хранения в синглтоне ExtStateIface или его потомка
+struct StateHolder {
+    typedef boost::shared_ptr<ExtStateIface> PExtState;
+    PExtState ext_state;
+    StateHolder() :
+        ext_state(new EmptyExtState)
+    {}
+    ExtStateIface& operator()()
+    {
+        return *ext_state;
+    }
+};
 }
 
-inline void setConnectTime() { stats().time_connect = ::time(NULL); }
 
-inline void setHost(const std::string& h) { stats().connection_host = h; }
-
-inline void setLastFilteredUpdateTime() { stats().last_filtered_update = ::time(NULL); }
-
-inline void setMasterInfoFile(const std::string& f) { stats().master_info_file = f; }
-
-inline void setMasterLogName(const std::string& f) { stats().master_log_name = f; }
-
-inline void setMasterLogPos(unsigned int p) { stats().master_log_pos = p; }
-
-inline void setReconnectCount() { stats().reconnect_count++; }
-
-inline void setLastEventTime(time_t d) { 
-    stats().last_event_time = d; 
-    stats().last_update = ::time(NULL); 
-}
-
-inline void setStateProcessing(bool p) { stats().state_processing = p; }
-
-inline void writeMasterInfoFile() { stats().writeMasterInfoFile(); }
-
-inline void readMasterInfoFile(std::string& f, unsigned long& pos) { stats().readMasterInfoFile(f, pos); }
-
-inline void initTableCount(const std::string& t) {  stats().table_counts[t] = 0; }
-
-inline void incTableCount(const std::string& t) { stats().table_counts[t]++; }
-
-}
-
-}
-
-
-#endif 
+#endif
