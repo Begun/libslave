@@ -111,7 +111,7 @@ int bin2dec(const char *from, decimal_t *to, int precision, int scale)
     if (intg0x)
     {
         int i=dig2bytes[intg0x];
-        dec1 UNINIT_VAR(x);
+        dec1 x; //UNINIT_VAR(x);
         switch (i)
         {
             case 1: x=mi_sint1korr(from); break;
@@ -152,7 +152,7 @@ int bin2dec(const char *from, decimal_t *to, int precision, int scale)
     if (frac0x)
     {
         int i=dig2bytes[frac0x];
-        dec1 UNINIT_VAR(x);
+        dec1 x; //UNINIT_VAR(x);
         switch (i)
         {
             case 1: x=mi_sint1korr(from); break;
