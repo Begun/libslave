@@ -81,6 +81,59 @@ void xid_callback(unsigned int server_id) {
 }
 
 
+struct ExampleState : public slave::ExtStateIface {
+
+    slave::State state;
+
+    virtual slave::State getState() { return state; }
+
+    // Counts and timestamps of connects to mysql master.
+    virtual void setConnecting() { 
+        state.connect_time = ::time(NULL);
+        state.connect_count++;
+    }
+
+    virtual time_t getConnectTime() { return state.connect_time; }
+    virtual unsigned int getConnectCount() { return state.connect_count; }
+
+    // Timestamp of last actually handled event.
+    virtual void setLastFilteredUpdateTime() { state.last_filtered_update = ::time(NULL); }
+    virtual time_t getLastFilteredUpdateTime() { return state.last_filtered_update; }
+
+    // Position and local and remote time of last event read in binlog.
+    virtual void setLastEventTimePos(time_t t, unsigned long pos) {
+        state.last_event_time = t;
+        state.last_update = ::time(NULL);
+        state.intransaction_pos = pos;
+    }
+
+    virtual time_t getLastUpdateTime() { return state.last_update; }
+    virtual time_t getLastEventTime() { return state.last_event_time; }
+    virtual unsigned long getIntransactionPos() { return state.intransaction_pos; }
+
+    // Set and get binlog position in memory. (For rollback.)
+    virtual void setMasterLogNamePos(const std::string& log_name, unsigned long pos) {
+        state.master_log_name = log_name;
+        state.master_log_pos = pos;
+    }
+
+    virtual unsigned long getMasterLogPos() { return state.master_log_pos; }
+    virtual std::string getMasterLogName() { return state.master_log_name; }
+
+    // Persist the binlog position on disk. (For rollback.)
+    virtual void saveMasterInfo() {}
+    virtual bool loadMasterInfo(std::string& logname, unsigned long& pos) { return false; }
+
+    // False if we are currently waiting for binlog data from the network.
+    virtual void setStateProcessing(bool _state) { state.state_processing = _state; }
+    virtual bool getStateProcessing() { return state.state_processing; }
+
+    // For counting table names in the binlog stream.
+    virtual void initTableCount(const std::string& t) {}
+    virtual void incTableCount(const std::string& t) {}
+};
+
+
 int main(int argc, char** argv) {
 
     std::string host;
@@ -145,13 +198,13 @@ int main(int argc, char** argv) {
     masterinfo.user = user;
     masterinfo.password = password;
 
-    masterinfo.master_info_file = "libslave.master_info";
+    ExampleState state_and_stats;
 
     try {
 
         std::cout << "Creating client, setting callbacks..." << std::endl;
     
-        slave::Slave slave(masterinfo);
+        slave::Slave slave(masterinfo, state_and_stats);
 
         for (std::vector<std::string>::const_iterator i = tables.begin(); i != tables.end(); ++i) {
             slave.setCallback(database, *i, callback);
