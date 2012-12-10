@@ -45,7 +45,14 @@ Compiling:
 
 Edit Makefile to set the path of your boost includes and your build
 options; type 'make' to build a static and a shared version of the
-library.
+library. And You will use a cmake by your shell:
+
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=PATH_TO_INSTALL
+make && make install
+
+Support same without static lib -DENABLE_STATIC=OFF.
+
 
 Review and edit Logging.h and SlaveStats.h to interface the library to
 your app's logging and monitoring subsystems.
