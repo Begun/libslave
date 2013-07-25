@@ -343,180 +343,196 @@ struct raii_mysql_connector {
 
 void Slave::get_remote_binlog( const boost::function< bool() >& _interruptFlag) {
 
+    try {
 
+        int count_packet = 0;
 
-    int count_packet = 0;
+        generateSlaveId();
 
-    generateSlaveId();
+        // Moved to Slave member
+        // MYSQL mysql;
 
-    // Moved to Slave member
-    // MYSQL mysql;
+        raii_mysql_connector __conn(&mysql, m_master_info, ext_state);
 
-    raii_mysql_connector __conn(&mysql, m_master_info, ext_state);
+        //connect_to_master(false, &mysql);
 
-    //connect_to_master(false, &mysql);
-
-    register_slave_on_master(true, &mysql);
+        register_slave_on_master(true, &mysql);
 
 connected:
 
-    // Получим позицию бинлога, сохранённую в ext_state ранее, или загрузим её
-    // из persistent хранилища. false в случае, если не удалось получить позицию.
-    if( !ext_state.getMasterInfo(
-                m_master_info.master_log_name,
-                m_master_info.master_log_pos) ) {
-        // Если сохранённой ранее позиции бинлога нет,
-        // получаем последнюю версию бинлога и смещение
-        std::pair<std::string,unsigned int> row = getLastBinlog();
+        // Получим позицию бинлога, сохранённую в ext_state ранее, или загрузим её
+        // из persistent хранилища. false в случае, если не удалось получить позицию.
+        if( !ext_state.getMasterInfo(
+                    m_master_info.master_log_name,
+                    m_master_info.master_log_pos) ) {
+            // Если сохранённой ранее позиции бинлога нет,
+            // получаем последнюю версию бинлога и смещение
+            std::pair<std::string,unsigned int> row = getLastBinlog();
 
-        m_master_info.master_log_name = row.first;
-        m_master_info.master_log_pos = row.second;
+            m_master_info.master_log_name = row.first;
+            m_master_info.master_log_pos = row.second;
 
-        ext_state.setMasterLogNamePos(m_master_info.master_log_name, m_master_info.master_log_pos);
-        ext_state.saveMasterInfo();
-    }
-
-    LOG_INFO(log, "Starting from binlog_name:binlog_pos : " << m_master_info.master_log_name
-             << ":" << m_master_info.master_log_pos );
-
-
-    request_dump(m_master_info.master_log_name, m_master_info.master_log_pos, &mysql);
-
-    while (!_interruptFlag()) {
-
-        try {
-
-
-            LOG_TRACE(log, "-- reading event --");
-
-            unsigned long len = read_event(&mysql);
-
-            ext_state.setStateProcessing(true);
-
-            count_packet++;
-            LOG_TRACE(log, "Got event with length: " << len << " Packet number: " << count_packet );
-
-            // end of data
-
-            if (len == packet_error || len == packet_end_data) {
-
-                uint mysql_error_number = mysql_errno(&mysql);
-
-                switch(mysql_error_number) {
-                    case ER_NET_PACKET_TOO_LARGE:
-                        LOG_ERROR(log, "Myslave: Log entry on master is longer than max_allowed_packet on "
-                                  "slave. If the entry is correct, restart the server with a higher value of "
-                                  "max_allowed_packet. max_allowed_packet=" << mysql_error(&mysql) );
-                        break;
-                    case ER_MASTER_FATAL_ERROR_READING_BINLOG: // Ошибка -- неизвестный бинлог-файл.
-                        LOG_ERROR(log, "Myslave: fatal error reading binlog. " <<  mysql_error(&mysql) );
-                        break;
-                    case 2013: // Обработка ошибки 'Lost connection to MySQL'
-                        LOG_WARNING(log, "Myslave: Error from MySQL: " << mysql_error(&mysql) );
-                        break;
-                    default:
-                        LOG_ERROR(log, "Myslave: Error reading packet from server: " << mysql_error(&mysql)
-                                << "; mysql_error: " << mysql_errno(&mysql));
-                        break;
-                }
-
-                __conn.connect(true);
-
-                goto connected;
-            } // len == packet_error
-
-            // Ok event
-
-            if (len == packet_end_data) {
-                continue;
-            }
-
-            slave::Basic_event_info event;
-
-            if (!slave::read_log_event((const char*) mysql.net.read_pos + 1,
-                                       len - 1, 
-                                       event)) {
-
-                LOG_TRACE(log, "Skipping unknown event.");
-                continue;
-            }
-
-            //
-
-            LOG_TRACE(log, "Event log position: " << event.log_pos );
-
-            if (event.log_pos != 0) {
-                m_master_info.master_log_pos = event.log_pos;
-                ext_state.setLastEventTimePos(event.when, event.log_pos);
-            }
-
-            LOG_TRACE(log, "seconds_behind_master: " << (::time(NULL) - event.when) );
-
-
-            // MySQL5.1.23 binlogs can be read only starting from a XID_EVENT
-            // MySQL5.1.23 ev->log_pos -- the binlog offset
-
-            if (event.type == XID_EVENT) {
-
-                ext_state.setMasterLogNamePos(m_master_info.master_log_name, m_master_info.master_log_pos);
-
-                LOG_TRACE(log, "Got XID event. Using binlog name:pos: "
-                          << m_master_info.master_log_name << ":" << m_master_info.master_log_pos);
-
-
-                if (m_xid_callback)
-                    m_xid_callback(event.server_id);
-
-            } else  if (event.type == ROTATE_EVENT) {
-
-                slave::Rotate_event_info rei(event.buf, event.event_len);
-
-                /*
-                 * new_log_ident - new binlog name
-                 * pos - position of the starting event
-                 */
-
-                LOG_INFO(log, "Got rotate event.");
-
-                /* WTF
-                 */
-
-                if (event.when == 0) {
-
-                    //LOG_TRACE(log, "ROTATE_FAKE");
-                }
-
-                m_master_info.master_log_name = rei.new_log_ident;
-                m_master_info.master_log_pos = rei.pos; // this will always be equal to 4
-
-                ext_state.setMasterLogNamePos(m_master_info.master_log_name, m_master_info.master_log_pos);
-
-                LOG_TRACE(log, "ROTATE_EVENT processed OK.");
-            }
-
-            
-            if (process_event(event, m_rli, m_master_info.master_log_pos)) {
-
-                LOG_TRACE(log, "Error in processing event.");
-            }
-
-            
-
-        } catch (const std::exception& _ex ) {
-
-            LOG_ERROR(log, "Met exception in get_remote_binlog cycle. Message: " << _ex.what() );
-            usleep(1000*1000);
-            continue;
-
+            ext_state.setMasterLogNamePos(m_master_info.master_log_name, m_master_info.master_log_pos);
+            ext_state.saveMasterInfo();
         }
 
-    } //while
+        LOG_INFO(log, "Starting from binlog_name:binlog_pos : " << m_master_info.master_log_name
+                << ":" << m_master_info.master_log_pos );
 
-    LOG_WARNING(log, "Binlog monitor was stopped. Binlog events are not listened.");
+
+        request_dump(m_master_info.master_log_name, m_master_info.master_log_pos, &mysql);
+
+        while (!_interruptFlag()) {
+
+            try {
+
+
+                LOG_TRACE(log, "-- reading event --");
+
+                unsigned long len = read_event(&mysql);
+
+                ext_state.setStateProcessing(true);
+
+                count_packet++;
+                LOG_TRACE(log, "Got event with length: " << len << " Packet number: " << count_packet );
+
+                // end of data
+
+                if (len == packet_error || len == packet_end_data) {
+
+                    uint mysql_error_number = mysql_errno(&mysql);
+
+                    switch(mysql_error_number) {
+                        case ER_NET_PACKET_TOO_LARGE:
+                            LOG_ERROR(log, "Myslave: Log entry on master is longer than max_allowed_packet on "
+                                    "slave. If the entry is correct, restart the server with a higher value of "
+                                    "max_allowed_packet. max_allowed_packet=" << mysql_error(&mysql) );
+                            break;
+                        case ER_MASTER_FATAL_ERROR_READING_BINLOG: // Ошибка -- неизвестный бинлог-файл.
+                            LOG_ERROR(log, "Myslave: fatal error reading binlog. " <<  mysql_error(&mysql) );
+                            break;
+                        case 2013: // Обработка ошибки 'Lost connection to MySQL'
+                            LOG_WARNING(log, "Myslave: Error from MySQL: " << mysql_error(&mysql) );
+                            break;
+                        default:
+                            LOG_ERROR(log, "Myslave: Error reading packet from server: " << mysql_error(&mysql)
+                                    << "; mysql_error: " << mysql_errno(&mysql));
+                            break;
+                    }
+
+                    __conn.connect(true);
+
+                    goto connected;
+                } // len == packet_error
+
+                // Ok event
+
+                if (len == packet_end_data) {
+                    continue;
+                }
+
+                slave::Basic_event_info event;
+
+                if (!slave::read_log_event((const char*) mysql.net.read_pos + 1,
+                            len - 1, 
+                            event)) {
+
+                    LOG_TRACE(log, "Skipping unknown event.");
+                    continue;
+                }
+
+                //
+
+                LOG_TRACE(log, "Event log position: " << event.log_pos );
+
+                if (event.log_pos != 0) {
+                    m_master_info.master_log_pos = event.log_pos;
+                    ext_state.setLastEventTimePos(event.when, event.log_pos);
+                }
+
+                LOG_TRACE(log, "seconds_behind_master: " << (::time(NULL) - event.when) );
+
+
+                // MySQL5.1.23 binlogs can be read only starting from a XID_EVENT
+                // MySQL5.1.23 ev->log_pos -- the binlog offset
+
+                if (event.type == XID_EVENT) {
+
+                    ext_state.setMasterLogNamePos(m_master_info.master_log_name, m_master_info.master_log_pos);
+
+                    LOG_TRACE(log, "Got XID event. Using binlog name:pos: "
+                            << m_master_info.master_log_name << ":" << m_master_info.master_log_pos);
+
+
+                    if (m_xid_callback)
+                        m_xid_callback(event.server_id);
+
+                } else  if (event.type == ROTATE_EVENT) {
+
+                    slave::Rotate_event_info rei(event.buf, event.event_len);
+
+                    /*
+                     * new_log_ident - new binlog name
+                     * pos - position of the starting event
+                     */
+
+                    LOG_INFO(log, "Got rotate event.");
+
+                    /* WTF
+                     */
+
+                    if (event.when == 0) {
+
+                        //LOG_TRACE(log, "ROTATE_FAKE");
+                    }
+
+                    m_master_info.master_log_name = rei.new_log_ident;
+                    m_master_info.master_log_pos = rei.pos; // this will always be equal to 4
+
+                    ext_state.setMasterLogNamePos(m_master_info.master_log_name, m_master_info.master_log_pos);
+
+                    LOG_TRACE(log, "ROTATE_EVENT processed OK.");
+                }
+
+
+                if (process_event(event, m_rli, m_master_info.master_log_pos)) {
+
+                    LOG_TRACE(log, "Error in processing event.");
+                }
+
+
+
+            } catch (const std::exception& _ex ) {
+
+                LOG_ERROR(log, "Met exception in get_remote_binlog cycle. Message: " << _ex.what() );
+                usleep(1000*1000);
+                continue;
+
+            }
+
+        } //while
+
+        LOG_WARNING(log, "Binlog monitor was stopped. Binlog events are not listened.");
+    } catch (const std::exception & e) {
+        std::string msg = "[";
+        msg += ext_state.getMasterLogName();
+        msg += " : ";
+        msg += ext_state.getMasterLogPos();
+        msg += "] ";
+        msg += e.what();
+        throw std::runtime_error(msg);
+    } catch (...) {
+        std::string msg = "[";
+        msg += ext_state.getMasterLogName();
+        msg += " : ";
+        msg += ext_state.getMasterLogPos();
+        msg += "] ";
+        msg += "Unknown exception";
+        throw std::runtime_error(msg);
+    }
 
     try {
         register_slave_on_master(false, &mysql);
-
     } catch (const std::exception & ex) {
         LOG_ERROR(log, "Slave::get_remote_binlog: error closing connection to MYSQL. Exception catched: " << ex.what());
     }
