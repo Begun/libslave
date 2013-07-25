@@ -286,7 +286,9 @@ protected:
 class Field_set: public Field_enum {
 
     unsigned int pack_length() const {
-        return (unsigned int) ((count_elements + 7)/8);
+        unsigned int x = (unsigned int) ((count_elements + 7)/8);
+        x = (x > 4 ? 8 : x);
+        return x;
     }
 
 public:
