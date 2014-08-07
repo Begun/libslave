@@ -39,6 +39,20 @@ FIND_LIBRARY (MYSQL_LIB NAMES mysqlclient_r
 		 /opt/mysql/mysql/lib/mysql
 		 /opt/mysql/lib/mysql)
 
+FIND_LIBRARY (MYSQL_LIB NAMES mysqld
+		 PATHS
+		 $ENV{MYSQL_DIR}/libmysql_r/.libs
+		 $ENV{MYSQL_DIR}/lib
+		 $ENV{MYSQL_DIR}/lib/mysql
+		 /usr/lib/mysql
+		 /usr/local/lib/mysql
+		 /usr/local/mysql/lib
+		 /usr/local/mysql/lib/mysql
+		 /opt/local/mysql5/lib
+		 /opt/local/lib/mysql5/mysql
+		 /opt/mysql/mysql/lib/mysql
+		 /opt/mysql/lib/mysql)
+
 IF (MYSQL_LIB)
 	GET_FILENAME_COMPONENT (MYSQL_LIB_DIR ${MYSQL_LIB} PATH)
 ENDIF (MYSQL_LIB)
@@ -49,7 +63,7 @@ IF (MYSQL_INCLUDE_DIR AND MYSQL_LIB_DIR)
 	INCLUDE_DIRECTORIES (${MYSQL_INCLUDE_DIR})
 	LINK_DIRECTORIES (${MYSQL_LIB_DIR})
 
-	SET(MYSQL_CLIENT_LIBS mysqlclient_r)
+	SET(MYSQL_CLIENT_LIBS mysqlclient_r mysqld)
 
 ELSE (MYSQL_INCLUDE_DIR AND MYSQL_LIB_DIR)
 	MESSAGE(FATAL_ERROR "Cannot find MySQL. Include dir: ${MYSQL_INCLUDE_DIR}  library dir: ${MYSQL_LIB_DIR}")
@@ -79,6 +93,7 @@ set(HEADERS
 
 INCLUDE_DIRECTORIES (
 	${MYSQL_INCLUDE_DIR}/mysql
+	${MYSQL_INCLUDE_DIR}/mysql/private
 	${Boost_INCLUDE_DIRS})
 
 LINK_DIRECTORIES (
