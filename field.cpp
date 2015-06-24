@@ -247,7 +247,7 @@ const char* Field_set::unpack(const char* from) {
 
     switch(pack_length()) {
     case 1:
-        tmp = ulonglong(*((char*)(from)));
+        tmp = ulonglong(*((unsigned char*)(from)));
         break;
     case 2:
         tmp = ulonglong(uint2korr(from));
