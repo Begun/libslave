@@ -27,14 +27,31 @@
 #include <map>
 #include <set>
 
-
 #include <mysql/my_global.h>
 #undef min
 #undef max
 
 #include <mysql/mysql.h>
 #include <mysql/m_ctype.h>
-#include <mysql/sql_common.h>
+
+// MySQL headers are broken and cause errors when included. Hacks follow.
+//#include <mysql/sql_common.h>
+
+extern "C" {
+
+my_bool cli_advanced_command(MYSQL *mysql, enum enum_server_command command,
+                             const unsigned char *header, unsigned long header_length,
+                             const unsigned char *arg, unsigned long arg_length,
+                             my_bool skip_check, MYSQL_STMT *stmt);
+
+#define simple_command(mysql, command, arg, length, skip_check) \
+    cli_advanced_command(mysql, command, 0, 0, arg, length, skip_check, NULL)
+
+unsigned long cli_safe_read(MYSQL *mysql);
+void end_server(MYSQL *mysql);
+
+}
+// End of hacks.
 
 #include "slave_log_event.h"
 #include "SlaveStats.h"
@@ -161,7 +178,8 @@ protected:
                      const std::string& db_name, const std::string& tbl_name,
                      const collate_map_t& collate_map, nanomysql::Connection& conn) const;
 		
-    void register_slave_on_master(const bool m_register, MYSQL* mysql);
+    void register_slave_on_master(MYSQL* mysql);
+    void deregister_slave_on_master(MYSQL* mysql);
 		
     void generateSlaveId();
 	

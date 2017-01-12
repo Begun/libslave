@@ -117,7 +117,7 @@ void Slave::createTable(RelayLogInfo& rli,
         //row.at(3) - can be null
 
 
-        std::map<std::string,nanomysql::Connection::field>::const_iterator z = i->find("Field");
+        std::map<std::string,nanomysql::field>::const_iterator z = i->find("Field");
 
         if (z == i->end())
             throw std::runtime_error("Slave::create_table(): DESCRIBE query did not return 'Field'");
@@ -356,7 +356,7 @@ void Slave::get_remote_binlog( const boost::function< bool() >& _interruptFlag) 
 
         //connect_to_master(false, &mysql);
 
-        register_slave_on_master(true, &mysql);
+        register_slave_on_master(&mysql);
 
 connected:
 
@@ -513,6 +513,8 @@ connected:
         } //while
 
         LOG_WARNING(log, "Binlog monitor was stopped. Binlog events are not listened.");
+
+        deregister_slave_on_master(&mysql);
     } catch (const std::exception & e) {
         std::string msg = "[";
         msg += ext_state.getMasterLogName();
@@ -529,12 +531,6 @@ connected:
         msg += "] ";
         msg += "Unknown exception";
         throw std::runtime_error(msg);
-    }
-
-    try {
-        register_slave_on_master(false, &mysql);
-    } catch (const std::exception & ex) {
-        LOG_ERROR(log, "Slave::get_remote_binlog: error closing connection to MYSQL. Exception catched: " << ex.what());
     }
 }
 
@@ -561,7 +557,7 @@ std::map<std::string,std::string> Slave::getRowType(const std::string& db_name,
         //row[0] - the table name
         //row[3] - row_format
 
-        std::map<std::string,nanomysql::Connection::field>::const_iterator z = i->find("Name");
+        std::map<std::string,nanomysql::field>::const_iterator z = i->find("Name");
 
         if (z == i->end())
             throw std::runtime_error("Slave::create_table(): SHOW TABLE STATUS query did not return 'Name'");
@@ -588,7 +584,7 @@ std::map<std::string,std::string> Slave::getRowType(const std::string& db_name,
 
 
 
-void Slave::register_slave_on_master(const bool m_register, MYSQL* mysql) {
+void Slave::register_slave_on_master(MYSQL* mysql) {
 
     uchar buf[1024], *pos= buf;
 
@@ -621,25 +617,22 @@ void Slave::register_slave_on_master(const bool m_register, MYSQL* mysql) {
     int4store(pos, 0);
     pos+= 4;
 
-    //LOG_INFO(log, "Slave::register_slave_on_master --->, m_register = " << m_register);
+    if (simple_command(mysql, COM_REGISTER_SLAVE, buf, (size_t) (pos-buf), 0)) {
 
-    if (m_register) {
-
-        if (simple_command(mysql, COM_REGISTER_SLAVE, buf, (size_t) (pos-buf), 0)) {
-
-            LOG_ERROR(log, "Unable to register slave.");
-            throw std::runtime_error("Slave::register_slave_on_master(): Error registring on slave: " +
-                                     std::string(mysql_error(mysql)));
-        }
-
-        LOG_TRACE(log, "Success registering slave on master");
-
-    } else {
-
-        simple_command(mysql, COM_QUIT, buf, (size_t) (pos-buf), 0);
+        LOG_ERROR(log, "Unable to register slave.");
+        throw std::runtime_error("Slave::register_slave_on_master(): Error registring on slave: " +
+                                 std::string(mysql_error(mysql)));
     }
+
+    LOG_TRACE(log, "Success registering slave on master");
 }
 
+void Slave::deregister_slave_on_master(MYSQL* mysql) {
+
+    LOG_DEBUG(log, "Deregistering slave on master: m_server_id = " << m_server_id << "...");
+    // Last '1' means 'no checking', otherwise command can hang
+    simple_command(mysql, COM_QUIT, 0, 0, 1);
+}
 
 void Slave::check_master_version() {
 
@@ -684,7 +677,6 @@ void Slave::check_master_version() {
             v = e+1;
         }
 
-
         /* */
         if (ok) {
             return;
@@ -709,7 +701,7 @@ void Slave::check_master_binlog_format() {
 
     if (res.size() == 1 && res[0].size() == 2) {
 
-        std::map<std::string,nanomysql::Connection::field>::const_iterator z = res[0].find("Value");
+        std::map<std::string,nanomysql::field>::const_iterator z = res[0].find("Value");
 
         if (z == res[0].end())
             throw std::runtime_error("Slave::create_table(): SHOW GLOBAL VARIABLES query did not return 'Value'");
@@ -732,6 +724,8 @@ void Slave::check_master_binlog_format() {
 
 
 // This will check if a QUERY_EVENT holds an "ALTER TABLE ..." string.
+namespace
+{
 
 static bool checkAlterQuery(const std::string& str)
 {
@@ -792,7 +786,6 @@ static bool checkAlterQuery(const std::string& str)
     return false;
 }
 
-
 bool checkCreateQuery(const std::string& str)
 {
     if (0 == ::strncasecmp("create table ", str.c_str(), 13))
@@ -800,7 +793,15 @@ bool checkCreateQuery(const std::string& str)
     return false;
 }
 
-
+bool checkDropTableQuery(const std::string& str)
+{
+    if (0 == ::strncasecmp("drop table ", str.c_str(), 11))
+    {
+        return true;
+    }
+    return false;
+}
+}
 
 int Slave::process_event(const slave::Basic_event_info& bei, RelayLogInfo &m_rli, unsigned long long pos)
 {
@@ -820,7 +821,7 @@ int Slave::process_event(const slave::Basic_event_info& bei, RelayLogInfo &m_rli
 
         LOG_TRACE(log, "Received QUERY_EVENT: " << qei.query);
 
-        if (checkAlterQuery(qei.query) || checkCreateQuery(qei.query)) {
+        if (checkAlterQuery(qei.query) || checkCreateQuery(qei.query) || checkDropTableQuery(qei.query)) {
 
             LOG_DEBUG(log, "Rebuilding database structure.");
             createDatabaseStructure();
@@ -933,7 +934,7 @@ void Slave::generateSlaveId()
 
         //row[0] - server_id
 
-        std::map<std::string,nanomysql::Connection::field>::const_iterator z = i->find("Server_id");
+        std::map<std::string,nanomysql::field>::const_iterator z = i->find("Server_id");
         
         if (z == i->end())
             throw std::runtime_error("Slave::create_table(): SHOW SLAVE HOSTS query did not return 'Server_id'");
@@ -977,7 +978,7 @@ std::pair<std::string,unsigned int> Slave::getLastBinlog()
 
     if (res.size() == 1 && res[0].size() == 4) {
 
-        std::map<std::string,nanomysql::Connection::field>::const_iterator z = res[0].find("File");
+        std::map<std::string,nanomysql::field>::const_iterator z = res[0].find("File");
         
         if (z == res[0].end())
             throw std::runtime_error("Slave::create_table(): SHOW SLAVE HOSTS query did not return 'File'");
